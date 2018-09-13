@@ -82,8 +82,8 @@ def main(params):
                           weight_decay=params.weight_decay)
     converter = LabelConverter(params.alphabet)
     solver = SolverWrapper(params)
-    solver.train(train_loader, val_loader, model, criterion,
-                 optimizer, device, converter)
+    # train
+    solver.train(train_loader, val_loader, model, criterion, optimizer, device, converter)
 
 if __name__ == '__main__':
     main(parse_args())

@@ -40,5 +40,5 @@ with torch.no_grad():
     model.hidden = model.init_hidden(N)
     print('image name: {}'.format(img_name))
     outputs = model(img)
-    preds = converter.predict(outputs)
+    preds = converter.best_path_decode(outputs)
     print('preds: {}'.format(preds))

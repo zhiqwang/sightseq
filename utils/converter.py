@@ -84,7 +84,7 @@ class LabelConverter(object):
                 index += l
             return labels
 
-    def predict(self, probs):
+    def best_path_decode(self, probs):
         seq_len, batch_size = probs.shape[:2]
         lengths = torch.IntTensor(batch_size).fill_(seq_len)
         _, probs = probs.max(2)

@@ -11,8 +11,8 @@ class SolverWrapper(object):
         self.experiment = params.experiment
         self.best_checkpoint_path = os.path.join(self.experiment, 'lstm_ctc_demon.pth')
 
-    def train(self, train_loader, val_loader, model,
-              criterion, optimizer, device, converter):
+    def train(self, train_loader, val_loader, model, criterion, optimizer, device, converter):
+        """trainer."""
         print('Start training ...')
         is_best = False
         step = 0
@@ -110,7 +110,7 @@ class SolverWrapper(object):
                 model.hidden = model.init_hidden(batch_size)
                 images = images.to(device)
                 outputs = model(images)
-                preds = converter.predict(outputs)
+                preds = converter.best_path_decode(outputs)
                 for pred, label in zip(preds, labels):
                     if pred == label:
                         num_correct += 1
