@@ -36,6 +36,7 @@ class Normalize(object):
     def __init__(self, mean, std):
         self.mean = mean
         self.std = std
+
     def __call__(self, img):
         img -= self.mean
         img /= self.std
@@ -55,8 +56,31 @@ class Resize(object):
 class ToTensor(object):
     """change image to sequence."""
     def __call__(self, img):
-        w = img.shape[1]
-        img = img.transpose(1, 0, 2).reshape((w, -1))
         img = torch.from_numpy(img)
-        # img.sub_(0.4).div_(0.14)
+        # numpy image: H x W x C
+        # torch image: C X H X W
+        img = img.permute(2, 0, 1)
+        return img
+
+
+class ToGray(object):
+    """ToGray"""
+    def __call__(self, img):
+        return cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
+
+
+class ToTensorRGBFlatten(object):
+    """change image to sequence."""
+    def __call__(self, img):
+        seq_len = img.shape[1]
+        img = img.transpose(1, 0, 2).reshape((seq_len, -1))
+        img = torch.from_numpy(img)
+        return img
+
+
+class ToTensorGray(object):
+    """change image to sequence."""
+    def __call__(self, img):
+        img = torch.from_numpy(img)
+        img = img.permute(1, 0).contiguous()
         return img

@@ -7,12 +7,17 @@ import torch.optim as optim
 from torchvision import transforms
 from warpctc_pytorch import CTCLoss
 
-from models.lstm_feature import LSTMFeatures
 from utils.trainer import SolverWrapper
 from utils.converter import LabelConverter
-from utils.dataset import digitsDataset, Normalize, Resize, ToTensor
+from utils.dataset import digitsDataset, Normalize, Resize
+from utils.dataset import ToTensor, ToTensorRGBFlatten
 
+from models.lstm_feature import LSTMFeatures
+from models.cnn_feature import CNNFeature
+
+from easydict import EasyDict
 gpu_id = "2"
+os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
 import warnings
 warnings.filterwarnings("always")
@@ -50,40 +55,63 @@ def parse_args():
                         help='Interval to be displayed')
     parser.add_argument('--save_interval', type=int, default=10000,
                         help='save the model')
-    parser.add_argument('--experiment', type=str, default='./data/experiment',
+    parser.add_argument('--expr_path', type=str, default='./data/experiment',
                         help='Where to store samples and models')
+    parser.add_argument('--rnn', action='store_true',
+                        help='Train the model with model of rnn')
     args = parser.parse_args()
     return args
 
-def main(params):
-    transform = transforms.Compose([Normalize([0.3956, 0.5763, 0.5616],
-                                              [0.1535, 0.1278, 0.1299]),
-                                    Resize((204, 32)),
-                                    ToTensor()])
-    # transform = ToTensor()
-    train_set = digitsDataset(params.train_root_path, transform=transform)
-    val_set = digitsDataset(params.val_root_path, transform=transform)
-    train_loader = DataLoader(train_set, batch_size=params.batch_size,
+def main(args):
+    if args.rnn:
+        transform = transforms.Compose([Normalize([0.3956, 0.5763, 0.5616],
+                                                  [0.1535, 0.1278, 0.1299]),
+                                        Resize((204, 32)),
+                                        ToTensorRGBFlatten()])
+    else:
+        transform = transforms.Compose([Normalize([0.3956, 0.5763, 0.5616],
+                                                  [0.1535, 0.1278, 0.1299]),
+                                        Resize((204, 32)),
+                                        ToTensor()])
+    train_set = digitsDataset(args.train_root_path, transform=transform)
+    val_set = digitsDataset(args.val_root_path, transform=transform)
+    train_loader = DataLoader(train_set, batch_size=args.batch_size,
                               shuffle=True, num_workers=4,
                               pin_memory=True)
-    val_loader = DataLoader(val_set, batch_size=params.batch_size,
+    val_loader = DataLoader(val_set, batch_size=args.batch_size,
                             shuffle=False, num_workers=4,
                             pin_memory=True)
-
+    # trainer parameters
+    params = EasyDict()
+    params.max_epoch = args.max_epoch
+    params.print_freq = args.print_freq
+    params.validate_interval = args.validate_interval
+    params.save_interval = args.save_interval
+    params.expr_path = args.expr_path
+    params.rnn = args.rnn
     device = torch.device("cuda")
-    ntoken = len(params.alphabet) + 1
-    input_dim = 96
-    model = LSTMFeatures(input_dim, params.batch_size, ntoken, nhid=512, nlayers=2)
+
+    # train engine
+    ntoken = len(args.alphabet) + 1
+    if args.rnn:
+        input_dim = 96
+        params.seq_len = 204
+        model = LSTMFeatures(input_dim, args.batch_size, ntoken)
+    else:
+        params.seq_len = 48
+        model = CNNFeature(ntoken)
     model = model.to(device)
     criterion = CTCLoss()
     criterion = criterion.to(device)
-    optimizer = optim.SGD(model.parameters(), lr=params.lr,
-                          momentum=params.momentum,
-                          weight_decay=params.weight_decay)
-    converter = LabelConverter(params.alphabet)
+    optimizer = optim.SGD(model.parameters(), lr=args.lr,
+                          momentum=args.momentum,
+                          weight_decay=args.weight_decay)
+    converter = LabelConverter(args.alphabet)
+
     solver = SolverWrapper(params)
     # train
-    solver.train(train_loader, val_loader, model, criterion, optimizer, device, converter)
+    solver.train(train_loader, val_loader, model, criterion,
+                 optimizer, device, converter)
 
 if __name__ == '__main__':
     main(parse_args())

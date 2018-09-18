@@ -2,16 +2,22 @@ import os
 import time
 import torch
 
+from tensorboardX import SummaryWriter
+writer = SummaryWriter('./data/runs')
+
 class SolverWrapper(object):
     def __init__(self, params):
         self.max_epoch = params.max_epoch
         self.print_freq = params.print_freq
         self.validate_interval = params.validate_interval
         self.save_interval = params.save_interval
-        self.experiment = params.experiment
-        self.best_checkpoint_path = os.path.join(self.experiment, 'lstm_ctc_demon.pth')
+        self.expr_path = params.expr_path
+        self.best_checkpoint_path = os.path.join(self.expr_path, 'lstm_ctc_demon.pth')
+        self.seq_len = params.seq_len
+        self.rnn = params.rnn
 
-    def train(self, train_loader, val_loader, model, criterion, optimizer, device, converter):
+    def train(self, train_loader, val_loader, model, criterion, optimizer,
+              device, converter):
         """trainer."""
         print('Start training ...')
         is_best = False
@@ -43,6 +49,7 @@ class SolverWrapper(object):
                           'time: {batch_time.val:.3f} ({batch_time.avg:.3f}), '
                           'loss = {loss.val:.4f} ({loss.avg:.4f})'.format(
                             epoch, step, batch_time=batch_time, loss=losses))
+                    writer.add_scalar('Train/Loss', losses.val, step)
 
                 # validate
                 if step % self.validate_interval == 0:
@@ -61,7 +68,7 @@ class SolverWrapper(object):
                 # reset the time
                 end = time.time()
                 if step % self.save_interval == 0:
-                    checkpoint_path = os.path.join(self.experiment,
+                    checkpoint_path = os.path.join(self.expr_path,
                                                    'lstm_ctc_{}_{}.pth'.format(epoch, step))
                     print('==> Saving model to {}'.format(checkpoint_path))
                     self._save_checkpoint(model, checkpoint_path)
@@ -71,17 +78,17 @@ class SolverWrapper(object):
             data_time.reset()
         print('Done!')
 
-    @staticmethod
-    def _train_step(datum, model, criterion, optimizer, device, converter):
+    def _train_step(self, datum, model, criterion, optimizer, device, converter):
         """Train."""
         images, labels = datum
-        batch_size, seq_len = images.shape[:2]
+        batch_size = images.shape[0]
         # step 1. Clear out gradients
         model.zero_grad()
         # step 2. Get our inputs images ready for the network.
-        preds_size = torch.IntTensor(batch_size).fill_(seq_len)
+        preds_size = torch.IntTensor(batch_size).fill_(self.seq_len)
         # clear out hidden state of the LSTM
-        model.hidden = model.init_hidden(batch_size)
+        if self.rnn:
+            model.hidden = model.init_hidden(batch_size)
 
         # labels is a list of `torch.InTensor` with `batch_size` size.
         labels, lengths = converter.encode(labels)
@@ -98,8 +105,7 @@ class SolverWrapper(object):
         optimizer.step()
         return loss
 
-    @staticmethod
-    def _validate(val_loader, model, device, converter):
+    def _validate(self, val_loader, model, device, converter):
         """Validate."""
         duration = time.time()
         model.eval()  # switch to evaluate mode
@@ -107,7 +113,8 @@ class SolverWrapper(object):
         with torch.no_grad():
             for images, labels in val_loader:
                 batch_size = images.shape[0]
-                model.hidden = model.init_hidden(batch_size)
+                if self.rnn:
+                    model.hidden = model.init_hidden(batch_size)
                 images = images.to(device)
                 outputs = model(images)
                 preds = converter.best_path_decode(outputs)
