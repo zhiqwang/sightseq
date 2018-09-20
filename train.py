@@ -12,11 +12,11 @@ from utils.converter import LabelConverter
 from utils.dataset import digitsDataset, Normalize, Resize
 from utils.dataset import ToTensor, ToTensorRGBFlatten
 
-from models.lstm_feature import LSTMFeatures
-from models.cnn_feature import CNNFeature
+from models.lstm import LSTMFeatures
+from models.cnn import DenseNetFeature
 
 from easydict import EasyDict
-gpu_id = "2"
+gpu_id = "1"
 os.environ["CUDA_DEVICE_ORDER"]="PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"] = gpu_id
 import warnings
@@ -98,8 +98,8 @@ def main(args):
         params.seq_len = 204
         model = LSTMFeatures(input_dim, args.batch_size, ntoken)
     else:
-        params.seq_len = 48
-        model = CNNFeature(ntoken)
+        params.seq_len = 51
+        model = DenseNetFeature(num_classes=ntoken)
     model = model.to(device)
     criterion = CTCLoss()
     criterion = criterion.to(device)
