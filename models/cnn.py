@@ -98,8 +98,7 @@ class DenseNetFeature(nn.Module):
         out = F.relu(features, inplace=True)
         # print('shape: {}'.format(out.shape))
         # N x 128 x 8 x 51
-        batch_size = out.shape[0]
-        out = out.permute(3, 0, 1, 2).reshape(51, batch_size, -1)
+        out = out.permute(3, 0, 1, 2).reshape(out.shape[3], out.shape[0], -1)
         out = self.classifier(out)
         out = F.log_softmax(out, dim=2)
         return out

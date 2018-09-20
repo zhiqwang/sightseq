@@ -13,7 +13,6 @@ class SolverWrapper(object):
         self.save_interval = params.save_interval
         self.expr_path = params.expr_path
         self.best_checkpoint_path = os.path.join(self.expr_path, 'lstm_ctc_demon.pth')
-        self.seq_len = params.seq_len
         self.rnn = params.rnn
 
     def train(self, train_loader, val_loader, model, criterion, optimizer,
@@ -85,7 +84,6 @@ class SolverWrapper(object):
         # step 1. Clear out gradients
         model.zero_grad()
         # step 2. Get our inputs images ready for the network.
-        preds_size = torch.IntTensor(batch_size).fill_(self.seq_len)
         # clear out hidden state of the LSTM
         if self.rnn:
             model.hidden = model.init_hidden(batch_size)
@@ -100,6 +98,7 @@ class SolverWrapper(object):
 
         # step 4. Compute the loss, gradients, and update the parameters
         # by calling optimizer.step()
+        preds_size = torch.IntTensor(batch_size).fill_(preds.shape[0])
         loss = criterion(preds, labels, preds_size, lengths) / batch_size
         loss.backward()
         optimizer.step()

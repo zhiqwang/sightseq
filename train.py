@@ -95,10 +95,8 @@ def main(args):
     ntoken = len(args.alphabet) + 1
     if args.rnn:
         input_dim = 96
-        params.seq_len = 204
         model = LSTMFeatures(input_dim, args.batch_size, ntoken)
     else:
-        params.seq_len = 51
         model = DenseNetFeature(num_classes=ntoken)
     model = model.to(device)
     criterion = CTCLoss()
