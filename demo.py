@@ -2,15 +2,14 @@ import os
 import argparse
 import numpy as np
 import torch
-from models.lstm_feature import LSTMFeatures
 from utils.converter import LabelConverter
 import skimage
 from skimage import io
 from torchvision import transforms
 from utils.dataset import Normalize, Resize, ToTensor, ToTensorRGBFlatten
 
-from models.lstm_feature import LSTMFeatures
-from models.cnn_feature import CNNFeature
+from models.lstm import LSTMFeatures
+from models.cnn import DenseNetFeature
 
 def parse_args():
     '''Parse input arguments.'''
@@ -29,7 +28,7 @@ def parse_args():
     return args
 
 def main(args):
-    img_name = './data/val.data/00036_99727091586974.jpg'
+    img_name = './data/val.data/00034_99474504845304.jpg'
     model_path = './data/model/lstm_ctc_demon.pth'
     device = torch.device("cuda")
     img = io.imread(img_name)
@@ -62,7 +61,7 @@ def main(args):
         model = LSTMFeatures(input_dim, N, ntoken, nhid=512, nlayers=2)
         model.hidden = model.init_hidden(N)
     else:
-        model = CNNFeature(ntoken)
+        model = DenseNetFeature(num_classes=ntoken)
 
     model = model.to(device)
     model.load_state_dict(torch.load(model_path))
