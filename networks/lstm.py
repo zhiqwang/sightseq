@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 
 class LSTMFeatures(nn.Module):
     """Get the lstm features
@@ -24,7 +25,8 @@ class LSTMFeatures(nn.Module):
         seq_len = images.shape[1]
         images = images.permute(1, 0, 2).contiguous()
         # lstm output is seq_len x batch_size x nhid
-        lstm_out, self.hidden = self.lstm(images, self.hidden)
-        # feature is seq_len x batch_size x ntoken
-        lstm_features = self.fc(lstm_out)
-        return lstm_features
+        out, self.hidden = self.lstm(images, self.hidden)
+        # feature (out) is seq_len x batch_size x ntoken
+        out = self.fc(out)
+        out = F.log_softmax(out, dim=2)
+        return out

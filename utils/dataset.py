@@ -9,7 +9,7 @@ import torch.utils.data as data
 import glob
 
 
-class digitsDataset(data.Dataset):
+class DigitsDataset(data.Dataset):
     """ Digits dataset."""
     def __init__(self, root_dir, transform=None):
         self.img_files = glob.glob('{}/*.jpg'.format(root_dir))
@@ -26,9 +26,9 @@ class digitsDataset(data.Dataset):
         if self.transform is not None:
             img = self.transform(img)
 
-        label = img_name.split('_')[-1].split('.')[0]
+        target = img_name.split('_')[-1].split('.')[0]
 
-        return img, label
+        return img, target
 
 
 class Normalize(object):

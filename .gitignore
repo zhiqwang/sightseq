@@ -1,6 +1,7 @@
 # model
 data
-experiment
+checkpoint
+logs
 debug.ipynb
 
 # macOS dir files

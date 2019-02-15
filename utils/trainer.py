@@ -1,149 +1,132 @@
 import os
-import time
 import torch
+import torch.nn as nn
 
-from tensorboardX import SummaryWriter
-writer = SummaryWriter('./data/runs')
+def init_network(params):
 
-class SolverWrapper(object):
-    def __init__(self, params):
-        self.max_epoch = params.max_epoch
-        self.print_freq = params.print_freq
-        self.validate_interval = params.validate_interval
-        self.save_interval = params.save_interval
-        self.expr_path = params.expr_path
-        self.best_checkpoint_path = os.path.join(self.expr_path, 'lstm_ctc_demon.pth')
-        self.rnn = params.rnn
+    # parse params with default values
+    architecture = params.get('architecture', 'shufflenetv2')
+    mean = params.get('mean', [0.8800, 0.8844, 0.8769])
+    std = params.get('std', [0.1668, 0.1480, 0.1765])
+    pretrained = params.get('pretrained', True)
 
-    def train(self, train_loader, val_loader, model, criterion, optimizer,
-              device, converter):
-        """trainer."""
-        print('Start training ...')
-        is_best = False
-        step = 0
-        best_accuracy = 0.0
+    # get output dimensionality size
+    dim = OUTPUT_DIM[architecture]
 
-        batch_time = AverageMeter()
-        data_time = AverageMeter()
-        losses = AverageMeter()
+    # loading network from torchvision
+    if pretrained:
+        if architecture not in FEATURES:
+            # initialize with network pretrained on imagenet in pytorch
+            net_in = getattr(torchvision.models, architecture)(pretrained=True)
+        else:
+            # initialize with random weights, later on we will fill features with custom pretrained network
+            net_in = getattr(torchvision.models, architecture)(pretrained=False)
+    else:
+        # initialize with random weights
+        net_in = getattr(torchvision.models, architecture)(pretrained=False)
 
-        model.train()  # switch to train mode
-        end = time.time()
+    # initialize features
+    # take only convolutions for features,
+    # always ends with ReLU to make last activations non-negative
+    if architecture.startswith('alexnet'):
+        features = list(net_in.features.children())[:-1]
+    elif architecture.startswith('vgg'):
+        features = list(net_in.features.children())[:-1]
+    elif architecture.startswith('resnet'):
+        features = list(net_in.children())[:-2]
+    elif architecture.startswith('densenet'):
+        features = list(net_in.features.children())
+        features.append(nn.ReLU(inplace=True))
+    elif architecture.startswith('squeezenet'):
+        features = list(net_in.features.children())
+    elif architecture.startswith('shufflenetv2'):
+        features = list(net_in.children())[:-2]
+    else:
+        raise ValueError('Unsupported or unknown architecture: {}!'.format(architecture))
 
-        for epoch in range(self.max_epoch):
-            """training in one epoch."""
-            for datum in train_loader:
-                # measure data loading time
-                batch_size = datum[0].shape[0]
-                data_time.update(time.time() - end, batch_size)
-                loss = self._train_step(datum, model, criterion, optimizer, device, converter)
-                # measure elapsed time
-                batch_time.update(time.time() - end, batch_size)
-                losses.update(loss.item(), batch_size)
-                step += 1
+    # initialize local whitening
+    if local_whitening:
+        lwhiten = nn.Linear(dim, dim, bias=True)
+        # TODO: lwhiten with possible dimensionality reduce
 
-                # print_freq
-                if step % self.print_freq == 0:
-                    print('=> epoch: {:>3}, step: {:>6}, '
-                          'time: {batch_time.val:.3f} ({batch_time.avg:.3f}), '
-                          'loss = {loss.val:.4f} ({loss.avg:.4f})'.format(
-                            epoch, step, batch_time=batch_time, loss=losses))
-                    writer.add_scalar('Train/Loss', losses.val, step)
+        if pretrained:
+            lw = architecture
+            if lw in L_WHITENING:
+                print(">> {}: for '{}' custom computed local whitening '{}' is used"
+                    .format(os.path.basename(__file__), lw, os.path.basename(L_WHITENING[lw])))
+                whiten_dir = os.path.join(get_data_root(), 'whiten')
+                lwhiten.load_state_dict(model_zoo.load_url(L_WHITENING[lw], model_dir=whiten_dir))
+            else:
+                print(">> {}: for '{}' there is no local whitening computed, random weights are used"
+                    .format(os.path.basename(__file__), lw))
 
-                # validate
-                if step % self.validate_interval == 0:
-                    print('=> training data time: {:.6f}'.format(data_time.avg))
-                    print('=> Evaluating on validation dataset ...')
-                    accuracy, duration = self._validate(val_loader, model, device, converter)
-                    print('=> duration: {:.3f}, '
-                          'current accuracy = {:.4f}, '
-                          'best accuracy = {:.4f}'.format(
-                            duration, accuracy, best_accuracy))
-                    if (accuracy >= best_accuracy and accuracy > 0.0):
-                        best_accuracy = accuracy
-                        print('==> Saving the model to {}'.format(self.best_checkpoint_path))
-                        self._save_checkpoint(model, self.best_checkpoint_path, is_best=True)
-                    model.train()  # switch to train mode
-                # reset the time
-                end = time.time()
-                if step % self.save_interval == 0:
-                    checkpoint_path = os.path.join(self.expr_path,
-                                                   'lstm_ctc_{}_{}.pth'.format(epoch, step))
-                    print('==> Saving model to {}'.format(checkpoint_path))
-                    self._save_checkpoint(model, checkpoint_path)
-            # reset the losses
-            losses.reset()
-            batch_time.reset()
-            data_time.reset()
-        print('Done!')
+    else:
+        lwhiten = None
 
-    def _train_step(self, datum, model, criterion, optimizer, device, converter):
-        """Train."""
-        images, labels = datum
-        batch_size = images.shape[0]
-        # step 1. Clear out gradients
-        model.zero_grad()
-        # step 2. Get our inputs images ready for the network.
-        # clear out hidden state of the LSTM
-        if self.rnn:
-            model.hidden = model.init_hidden(batch_size)
+    # initialize pooling
+    pool = POOLING[pooling]()
 
-        # labels is a list of `torch.InTensor` with `batch_size` size.
-        labels, lengths = converter.encode(labels)
-        # to(device)
-        images = images.to(device)
+    # initialize regional pooling
+    if regional:
+        rpool = pool
+        rwhiten = nn.Linear(dim, dim, bias=True)
+        # TODO: rwhiten with possible dimensionality reduce
 
-        # step 3. Run out forward pass.
-        preds = model(images)
+        if pretrained:
+            rw = '{}-{}-r'.format(architecture, pooling)
+            if rw in R_WHITENING:
+                print(">> {}: for '{}' custom computed regional whitening '{}' is used"
+                    .format(os.path.basename(__file__), rw, os.path.basename(R_WHITENING[rw])))
+                whiten_dir = os.path.join(get_data_root(), 'whiten')
+                rwhiten.load_state_dict(model_zoo.load_url(R_WHITENING[rw], model_dir=whiten_dir))
+            else:
+                print(">> {}: for '{}' there is no regional whitening computed, random weights are used"
+                    .format(os.path.basename(__file__), rw))
 
-        # step 4. Compute the loss, gradients, and update the parameters
-        # by calling optimizer.step()
-        preds_size = torch.IntTensor(batch_size).fill_(preds.shape[0])
-        loss = criterion(preds, labels, preds_size, lengths) / batch_size
-        loss.backward()
-        optimizer.step()
-        return loss
+        pool = Rpool(rpool, rwhiten)
 
-    def _validate(self, val_loader, model, device, converter):
-        """Validate."""
-        duration = time.time()
-        model.eval()  # switch to evaluate mode
-        num_correct = 0
-        with torch.no_grad():
-            for images, labels in val_loader:
-                batch_size = images.shape[0]
-                if self.rnn:
-                    model.hidden = model.init_hidden(batch_size)
-                images = images.to(device)
-                outputs = model(images)
-                preds = converter.best_path_decode(outputs)
-                for pred, label in zip(preds, labels):
-                    if pred == label:
-                        num_correct += 1
-        accuracy = num_correct / len(val_loader.dataset)
-        duration = time.time() - duration
-        return accuracy, duration
+    # initialize whitening
+    if whitening:
+        whiten = nn.Linear(dim, dim, bias=True)
+        # TODO: whiten with possible dimensionality reduce
 
-    def _save_checkpoint(self, model, checkpoint_path, is_best=False):
-        if is_best:
-            if os.path.isfile(self.best_checkpoint_path):
-                os.remove(self.best_checkpoint_path)
-        torch.save(model.state_dict(), checkpoint_path)
+        if pretrained:
+            w = architecture
+            if local_whitening:
+                w += '-lw'
+            w += '-' + pooling
+            if regional:
+                w += '-r'
+            if w in WHITENING:
+                print(">> {}: for '{}' custom computed whitening '{}' is used"
+                    .format(os.path.basename(__file__), w, os.path.basename(WHITENING[w])))
+                whiten_dir = os.path.join(get_data_root(), 'whiten')
+                whiten.load_state_dict(model_zoo.load_url(WHITENING[w], model_dir=whiten_dir))
+            else:
+                print(">> {}: for '{}' there is no whitening computed, random weights are used"
+                    .format(os.path.basename(__file__), w))
+    else:
+        whiten = None
 
+    # create meta information to be stored in the network
+    meta = {
+        'architecture' : architecture, 
+        'local_whitening' : local_whitening, 
+        'pooling' : pooling, 
+        'regional' : regional, 
+        'whitening' : whitening, 
+        'mean' : mean, 
+        'std' : std,
+        'outputdim' : dim,
+    }
 
-class AverageMeter(object):
-    """Computes and stores the average and current value"""
-    def __init__(self):
-        self.reset()
+    # create a generic image retrieval network
+    net = ImageRetrievalNet(features, lwhiten, pool, whiten, meta)
 
-    def reset(self):
-        self.val = 0
-        self.avg = 0
-        self.sum = 0
-        self.count = 0
+    # initialize features with custom pretrained network if needed
+    if pretrained and architecture in FEATURES:
+        print(">> {}: for '{}' custom pretrained features '{}' are used"
+              .format(os.path.basename(__file__), architecture, os.path.basename(FEATURES[architecture])))
+        net.features.load_state_dict(torch.load(FEATURES[architecture]))
 
-    def update(self, val, n=1):
-        self.val = val
-        self.sum += val * n
-        self.count += n
-        self.avg = self.sum / self.count
+    return net
