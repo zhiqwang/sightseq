@@ -1,22 +1,45 @@
-Convolutional Recurrent Neural Network
-======================================
+## Convolutional Recurrent Neural Network
 
-This software implements the Convolutional Recurrent Neural Network (CRNN) in pytorch.
+This software implements the Convolutional Recurrent Neural Network (CRNN) in pytorch in paper:
 
-- Resize the image height to 32, and the width should be multiple of 8.
+**An End-to-End Trainable Neural Network for Image-based Sequence Recognition and Its Application to Scene Text Recognition**,
+Baoguang Shi, Xiang Bai, Cong Yao,
+PAMI 2017 [[arXiv](https://arxiv.org/abs/1507.05717)]
 
-Run demo
-----------
+### What is it?
+
+This code implements:
+
+1. densenet + ctc loss
+2. resnet + ctc loss
+
+### Prerequisites
+
+In order to run this toolbox you will need:
+
+1. Python3 (tested with Python 3.7.0)
+1. PyTorch deep learning framework (tested with version 1.0.1)
+
+### Usage
+
+1. Navigate (`cd`) to the root of the toolbox `[YOUR_CRNN_ROOT]`.
+2. Resize the height of a image to 32, and the width should be multiple of 8.
+
+#### Training
+
+Training strategy
+```
+python ./main.py --not-pretrained --arch densenet_cifar
+```
+
+#### Testing
+
 Launch the demo by:
+```
+python ./main.py --test-only --resume densenet_cifar_best.pth.tar
+```
 
-    python train.py --test-only --resume densenet_best.pth.tar
-
-Train a new model
-----------
-    python train.py --not-pretrained --arch densenet_cifar
-
-Reference
-----------
+### Reference
 - [crnn.pytorch](https://github.com/meijieru/crnn.pytorch)
-- [efficient_densenet_pytorch](https://github.com/gpleiss/efficient_densenet_pytorch)
-- [DenseNet on CIFAR10]()
+- [CIFAR10 with PyTorch](https://github.com/kuangliu/pytorch-cifar)
+- [Efficient densenet pytorch](https://github.com/gpleiss/efficient_densenet_pytorch)
