@@ -13,7 +13,7 @@ Launch the demo by:
 
 Train a new model
 ----------
-    python train.py --not-pretrained --arch densenet
+    python train.py --not-pretrained --arch densenet_cifar
 
 Reference
 ----------
