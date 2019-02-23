@@ -9,20 +9,19 @@ import torch
 import torch.optim as optim
 import torch.nn as nn
 import torch.utils.data as data
-from torchvision import transforms
+import torchvision.transforms as transforms
 
 from utils.converter import LabelConverter
-from utils.dataset import DigitsDataset, Normalize, Resize
-from utils.dataset import ToTensor, ToTensorRGBFlatten
+from datasets.dataset import DigitsDataset
 
-from networks.densenet import denseNetBC_100_12
+from models.crnn import init_network
 
 import warnings
 warnings.filterwarnings("always")
 
 # from tensorboardX import SummaryWriter
-
 # writer = SummaryWriter('./data/runs')
+
 optimizer_names = ["sgd", "adam"]
 alphabet_names = ["0123456789"]
 
@@ -41,6 +40,8 @@ def parse_args():
                         help='optimizer options: {} (default: adam)'.format(' | '.join(optimizer_names)))
     parser.add_argument('--max-epoch', type=int, default='30',
                         help='number of total epochs to run (default: 30)')
+    parser.add_argument('--not-pretrained', dest='pretrained', action='store_false',
+                        help='initialize model with random weights (default: pretrained on cifar10)')
     parser.add_argument('--validate-interval', type=int, default=1,
                         help='Interval to be displayed')
     parser.add_argument('--save-interval', type=int, default=1,
@@ -91,11 +92,24 @@ def main():
     if not os.path.exists(args.directory):
         os.makedirs(args.directory)
 
+    # initialize model
+    if args.pretrained:
+        print(">> Using pre-trained model '{}'".format(args.arch))
+    else:
+        print(">> Using model from scratch (random weights) '{}'".format(args.arch))
+    model_params = {}
+    model_params['architecture'] = args.arch
+    model_params['num_classes'] = len(args.alphabet) + 1
+    model_params['mean'] = [0.396, 0.576, 0.562]
+    model_params['std'] = [0.154, 0.128, 0.130]
+    model_params['pretrained'] = args.pretrained
+    model = init_network(model_params)
+    model = model.to(device)
+
     transform = transforms.Compose([
-        Normalize([0.396, 0.576, 0.562],
-                  [0.154, 0.128, 0.130]),
-        Resize((204, 32)),
-        ToTensor()
+        transforms.Resize((32, 200)),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=model.meta['mean'], std=model.meta['std']),
     ])
     train_path = os.path.join(args.training_dataset, 'train')
     dev_path = os.path.join(args.training_dataset, 'dev')
@@ -106,12 +120,6 @@ def main():
                                    shuffle=True, num_workers=4, pin_memory=True)
     dev_loader = data.DataLoader(dev_dataset, batch_size=args.batch_size,
                                  shuffle=False, num_workers=4, pin_memory=True)
-
-    # train engine
-    ntoken = len(args.alphabet) + 1
-    model = denseNetBC_100_12(num_classes=ntoken)
-    model = model.to(device)
-    # model = init_network(model_params)
 
     criterion = nn.CTCLoss()
     criterion = criterion.to(device)
