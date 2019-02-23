@@ -3,7 +3,7 @@ Convolutional Recurrent Neural Network
 
 This software implements the Convolutional Recurrent Neural Network (CRNN) in pytorch.
 
-Resize the image height to 32.
+- Resize the image height to 32, and the width should be multiple of 8.
 
 Run demo
 ----------
@@ -13,7 +13,7 @@ Launch the demo by:
 
 Train a new model
 ----------
-    python train.py
+    python train.py --not-pretrained --arch densenet
 
 Reference
 ----------
