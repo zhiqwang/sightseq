@@ -8,12 +8,12 @@ PAMI 2017 [[arXiv](https://arxiv.org/abs/1507.05717)]
 
 ### What is it?
 
-This code implements:
+This code implements: (args.arch)
 
-1. DenseNet + CTCLoss
-2. ResNet + CTCLoss
-3. MobileNetV2 + CTCLoss
-4. ShuffleNetV2 + CTCLoss
+1. DenseNet + CTCLoss (densenet_cifar)
+2. ResNet + CTCLoss (resnet_cifar)
+3. MobileNetV2 + CTCLoss (mobilenetv2_cifar)
+4. ShuffleNetV2 + CTCLoss (shufflenetv2_cifar)
 
 ### Prerequisites
 
@@ -25,20 +25,20 @@ In order to run this toolbox you will need:
 ### Usage
 
 - Navigate (`cd`) to the root of the toolbox `[YOUR_CRNN_ROOT]`.
-- Resize the height of a image to 32, and the width should be divisible by 8
+- Resize the height of a image to 32, and the width should be divisible by 8.
 
 #### Training
 
 Training strategy:
 ```
-python ./main.py --not-pretrained --arch shufflenetv2_cifar
+python ./main.py --not-pretrained --arch densenet_cifar
 ```
 
 #### Testing
 
 Launch the demo by:
 ```
-python ./main.py --test-only --resume shufflenetv2_cifar_best.pth.tar
+python ./main.py --test-only --resume densenet_cifar_best.pth.tar
 ```
 
 ### Reference
