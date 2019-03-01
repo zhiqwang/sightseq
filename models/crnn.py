@@ -6,8 +6,7 @@ import torch.nn.functional as F
 
 import models
 
-# for some models, we have imported features (convolutions) from caffe
-# because the image retrieval performance is higher for them
+# pretrained features
 FEATURES = {}
 
 # output dimensionality for supported architectures
@@ -15,6 +14,8 @@ OUTPUT_DIM = {
     'resnet_cifar': 512,
     'densenet_cifar': 342,
     'densenet121': 384,
+    'mobilenetv2_cifar': 1280,
+    'shufflenetv2_cifar': 1024,
 }
 
 
@@ -89,6 +90,10 @@ def init_network(params):
     elif architecture.startswith('densenet'):
         features = list(net_in.features.children())
         features.append(nn.ReLU(inplace=True))
+    elif architecture.startswith('mobilenetv2'):
+        features = list(net_in.children())[:-2]
+    elif architecture.startswith('shufflenetv2'):
+        features = list(net_in.children())[:-2]
     else:
         raise ValueError('Unsupported or unknown architecture: {}!'.format(architecture))
 
@@ -101,7 +106,7 @@ def init_network(params):
         'outputdim' : dim,
     }
 
-    # create a generic image retrieval network
+    # create a generic crnn network
     net = CRNN(features, meta)
 
     # initialize features with custom pretrained network if needed

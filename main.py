@@ -14,6 +14,7 @@ import torchvision.transforms as transforms
 from utils.converter import LabelConverter
 from datasets.dataset import DigitsDataset
 
+import models
 from models.crnn import init_network
 
 import warnings
@@ -21,7 +22,9 @@ warnings.filterwarnings("always")
 
 # from tensorboardX import SummaryWriter
 # writer = SummaryWriter('./data/runs')
-
+model_names = sorted(name for name in models.__dict__
+    if name.islower() and not name.startswith("__")
+    and callable(models.__dict__[name]))
 optimizer_names = ["sgd", "adam"]
 alphabet_names = ["0123456789"]
 
@@ -30,8 +33,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Digit Recognition')
     parser.add_argument('--training-dataset', default='./data',
                         help='train dataset path')
-    parser.add_argument('--arch', default='shufflenetv2x10',
-                        help='model architecture (default: shufflenetv2x10)')
+    parser.add_argument('--arch', default='shufflenetv2_cifar', choices=model_names,
+                        help='model architecture: {} (default: shufflenetv2_cifar)'.format(' | '.join(model_names)))
     parser.add_argument('--gpu-id', type=int, default=-1,
                         help='gpu called when train')
     parser.add_argument('--alphabet', default='0123456789', choices=alphabet_names,

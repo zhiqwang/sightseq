@@ -68,7 +68,7 @@ class _DenseBlock(nn.Module):
                 drop_rate=drop_rate,
                 efficient=efficient,
             )
-            self.add_module('denselayer%d' % (i + 1), layer)
+            self.add_module('denselayer{}'.format(i + 1), layer)
 
     def forward(self, init_features):
         features = [init_features]
@@ -125,12 +125,12 @@ class DenseNet(nn.Module):
                 drop_rate=drop_rate,
                 efficient=efficient,
             )
-            self.features.add_module('denseblock%d' % (i + 1), block)
+            self.features.add_module('denseblock{}'.format(i + 1), block)
             num_features = num_features + num_layers * growth_rate
             if i != len(block_config) - 1:
                 trans = _Transition(num_input_features=num_features,
                                     num_output_features=int(num_features * compression))
-                self.features.add_module('transition%d' % (i + 1), trans)
+                self.features.add_module('transition{}'.format(i + 1), trans)
                 num_features = int(num_features * compression)
 
         # Final batch norm
@@ -154,7 +154,7 @@ class DenseNet(nn.Module):
     def forward(self, x):
         features = self.features(x)
         out = F.relu(features, inplace=True)
-        out = F.adaptive_avg_pool2d(out, (1,1)).view(features.size(0), -1)
+        out = F.adaptive_avg_pool2d(out, (1, 1)).view(out.size(0), -1)
         out = self.classifier(out)
         return out
 
@@ -170,8 +170,8 @@ def densenet121(pretrained=False, **kwargs):
 if __name__ == '__main__':
 
     # model = DenseNet(num_init_features=64, growth_rate=32, small_inputs=False, block_config=(6, 12, 24, 16))
-    # x = torch.randn(1,3,224,224)
+    # x = torch.randn(1, 3, 224, 224)
     model = DenseNet()
-    x = torch.randn(1,3,32,32)
+    x = torch.randn(1, 3, 32, 32)
     y = model(x)
     print('out: {}'.format(y.size()))

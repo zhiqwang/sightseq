@@ -1,6 +1,6 @@
 import os
 import torch
-import collections
+from collections.abc import Iterable
 
 class LabelConverter(object):
     """Convert between str and label.
@@ -42,7 +42,7 @@ class LabelConverter(object):
                 for char in labels
             ]
             length = [len(labels)]
-        elif isinstance(labels, collections.Iterable):
+        elif isinstance(labels, Iterable):
             length = [len(s) for s in labels]
             labels = ''.join(labels)
             labels, _ = self.encode(labels)

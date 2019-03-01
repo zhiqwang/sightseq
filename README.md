@@ -10,33 +10,35 @@ PAMI 2017 [[arXiv](https://arxiv.org/abs/1507.05717)]
 
 This code implements:
 
-1. densenet + ctc loss
-2. resnet + ctc loss
+1. DenseNet + CTCLoss
+2. ResNet + CTCLoss
+3. MobileNetV2 + CTCLoss
+4. ShuffleNetV2 + CTCLoss
 
 ### Prerequisites
 
 In order to run this toolbox you will need:
 
-1. Python3 (tested with Python 3.7.0)
-1. PyTorch deep learning framework (tested with version 1.0.1)
+- Python3 (tested with Python 3.7.0)
+- PyTorch deep learning framework (tested with version 1.0.1)
 
 ### Usage
 
-1. Navigate (`cd`) to the root of the toolbox `[YOUR_CRNN_ROOT]`.
-2. Resize the height of a image to 32, and the width should be multiple of 8.
+- Navigate (`cd`) to the root of the toolbox `[YOUR_CRNN_ROOT]`.
+- Resize the height of a image to 32, and the width should be divisible by 8
 
 #### Training
 
-Training strategy
+Training strategy:
 ```
-python ./main.py --not-pretrained --arch densenet_cifar
+python ./main.py --not-pretrained --arch shufflenetv2_cifar
 ```
 
 #### Testing
 
 Launch the demo by:
 ```
-python ./main.py --test-only --resume densenet_cifar_best.pth.tar
+python ./main.py --test-only --resume shufflenetv2_cifar_best.pth.tar
 ```
 
 ### Reference
