@@ -33,8 +33,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Digit Recognition')
     parser.add_argument('--training-dataset', default='./data',
                         help='train dataset path')
-    parser.add_argument('--arch', default='shufflenetv2_cifar', choices=model_names,
-                        help='model architecture: {} (default: shufflenetv2_cifar)'.format(' | '.join(model_names)))
+    parser.add_argument('--arch', default='mobilenetv2_cifar', choices=model_names,
+                        help='model architecture: {} (default: mobilenetv2_cifar)'.format(' | '.join(model_names)))
     parser.add_argument('--gpu-id', type=int, default=-1,
                         help='gpu called when train')
     parser.add_argument('--alphabet', default='0123456789', choices=alphabet_names,
@@ -59,8 +59,8 @@ def parse_args():
                         help='learning rate decay')
     parser.add_argument('--momentum', type=float, default=0.9,
                         help='momentum')
-    parser.add_argument('--weight-decay', type=float, default=1e-4,
-                        help='weight decay (default: 1e-4)')
+    parser.add_argument('--weight-decay', type=float, default=5e-4,
+                        help='weight decay (default: 5e-4)')
     parser.add_argument('--print-freq', type=int, default=10,
                         help='print frequency (default: 10)')
     parser.add_argument('--directory', metavar='EXPORT_DIR', default='./checkpoint',
@@ -82,7 +82,7 @@ def main():
     if args.gpu_id < 0:
         device = torch.device("cpu")
     else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
+        os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
         device = torch.device("cuda")
 
     # create export dir if it doesnt exist
