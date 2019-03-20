@@ -35,7 +35,7 @@ Refer to YCG09's [SynthText](https://github.com/YCG09/chinese_ocr), the image si
 
 In each line in the annotation file, the format is:
     
-    ```img_path encode1 encode2 encode3 encode4 encode5 ...```
+    img_path encode1 encode2 encode3 encode4 encode5 ...
 
 where `encode` is the sequence's encode.
 
@@ -51,9 +51,7 @@ Training with `densenet121` architecture and pre-trained models can be found [On
 
 Training strategy:
 
-    ```
     python ./main.py --arch densenet121 --alphabet [DATASET_ROOT_DIR]/alphabet_decode_5990.txt --dataset-root [DATASET_ROOT_DIR] --lr 5e-5 --optimizer rmsprop --gpu-id 0 --not-pretrained
-    ```
 
 #### Demo
 
@@ -65,15 +63,13 @@ Example image:
 
 Expected output:
 
-    ```-停--下--来--，--看--着--那--些--握--着------ => 停下来，看着那些握着```
+    -停--下--来--，--看--着--那--些--握--着------ => 停下来，看着那些握着
 
 #### Testing
 
 Use trained model to test:
 
-    ```
     python ./main.py --arch densenet121 --alphabet [DATASET_ROOT_DIR]/alphabet_decode_5990.txt --dataset-root [DATASET_ROOT_DIR] --lr 5e-5 --optimizer rmsprop --gpu-id 0 --resume densenet121_pretrained.pth.tar --test-only
-    ```
 
 ### Reference
 - [crnn.pytorch](https://github.com/meijieru/crnn.pytorch)
