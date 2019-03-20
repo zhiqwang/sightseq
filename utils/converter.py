@@ -37,10 +37,7 @@ class LabelConverter(object):
             torch.IntTensor [n]: length of each labels.
         """
         if isinstance(labels, str):
-            labels = [
-                self.dict[char.lower() if self._ignore_case else char]
-                for char in labels
-            ]
+            labels = [self.dict[char.lower() if self._ignore_case else char] for char in labels]
             length = [len(labels)]
         elif isinstance(labels, Iterable):
             length = [len(s) for s in labels]
@@ -48,8 +45,8 @@ class LabelConverter(object):
             labels, _ = self.encode(labels)
         return (torch.IntTensor(labels), torch.IntTensor(length))
 
-    def decode(self, probs, length, raw=False):
-        """Decode encoded labels back into strs.
+    def decode(self, probs, length, raw=False, strings=True):
+        """Decode encoded labels back into strings.
 
         Args:
             torch.IntTensor [length_0 + length_1 + ...
@@ -66,13 +63,20 @@ class LabelConverter(object):
             length = length[0]
             assert probs.numel() == length
             if raw:
-                return ''.join([self.alphabet[i - 1] for i in probs])
+                if strings:
+                    return u''.join([self.alphabet[i - 1] for i in probs]).encode('utf-8')
+                return probs.tolist()
             else:
-                char_list = []
+                probs_non_blank = []
                 for i in range(length):
                     if (probs[i] != 0 and (not (i > 0 and probs[i - 1] == probs[i]))):
-                        char_list.append(self.alphabet[probs[i] - 1])
-                return ''.join(char_list)
+                        if strings:
+                            probs_non_blank.append(self.alphabet[probs[i] - 1])
+                        else:
+                            probs_non_blank.append(probs[i].item())
+                if strings:
+                    return u''.join(probs_non_blank).encode('utf-8')
+                return probs_non_blank
         else:
             # batch mode
             assert probs.numel() == length.sum()
@@ -80,14 +84,13 @@ class LabelConverter(object):
             index = 0
             for i in range(length.numel()):
                 l = length[i]
-                labels.append(self.decode(probs[index:index + l], torch.IntTensor([l]), raw=raw))
+                labels.append(self.decode(probs[index:index + l], torch.IntTensor([l]), raw=raw, strings=strings))
                 index += l
             return labels
 
-    def best_path_decode(self, probs):
-        seq_len, batch_size = probs.shape[:2]
-        lengths = torch.IntTensor(batch_size).fill_(seq_len)
+    def best_path_decode(self, probs, raw=False, strings=True):
+        lengths = torch.full((probs.shape[1],), probs.shape[0], dtype=torch.int32)
         _, probs = probs.max(2)
         probs = probs.transpose(1, 0).contiguous().reshape(-1)
-        preds = self.decode(probs, lengths)
+        preds = self.decode(probs, lengths, raw=raw, strings=strings)
         return preds

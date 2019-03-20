@@ -12,7 +12,7 @@ import torch.utils.data as data
 import torchvision.transforms as transforms
 
 from utils.converter import LabelConverter
-from datasets.dataset import DigitsDataset
+from datasets.dataset import DigitsDataset, collate_train, collate_dev
 
 import models
 from models.crnn import init_network
@@ -25,22 +25,21 @@ warnings.filterwarnings("always")
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
-optimizer_names = ["sgd", "adam"]
-alphabet_names = ["0123456789"]
+optimizer_names = ["sgd", "adam", "rmsprop"]
 
 def parse_args():
     '''Parse input arguments.'''
     parser = argparse.ArgumentParser(description='Digit Recognition')
-    parser.add_argument('--training-dataset', default='./data',
+    parser.add_argument('--dataset-root', default='./data',
                         help='train dataset path')
     parser.add_argument('--arch', default='mobilenetv2_cifar', choices=model_names,
                         help='model architecture: {} (default: mobilenetv2_cifar)'.format(' | '.join(model_names)))
     parser.add_argument('--gpu-id', type=int, default=-1,
                         help='gpu called when train')
-    parser.add_argument('--alphabet', default='0123456789', choices=alphabet_names,
-                        help='label alphabet, string format')
-    parser.add_argument('--optimizer', default='adam', choices=optimizer_names,
-                        help='optimizer options: {} (default: adam)'.format(' | '.join(optimizer_names)))
+    parser.add_argument('--alphabet', default='0123456789',
+                        help='label alphabet, string format or file')
+    parser.add_argument('--optimizer', default='rmsprop', choices=optimizer_names,
+                        help='optimizer options: {} (default: rmsprop)'.format(' | '.join(optimizer_names)))
     parser.add_argument('--max-epoch', type=int, default='30',
                         help='number of total epochs to run (default: 30)')
     parser.add_argument('--not-pretrained', dest='pretrained', action='store_false',
@@ -49,8 +48,12 @@ def parse_args():
                         help='Interval to be displayed')
     parser.add_argument('--save-interval', type=int, default=1,
                         help='save a model')
-    parser.add_argument('--batch-size', type=int, default=16,
+    parser.add_argument('--workers', default=4, type=int,
+                        help='number of data loading workers (default: 4)')
+    parser.add_argument('--batch-size', type=int, default=64,
                         help='batch size to train a model')
+    parser.add_argument('--train-samples', default=640000, type=int,
+                        help='train sample number')
     parser.add_argument('--image-size', type=int, default=32,
                         help='maximum size of longer image side used for training (default: 32)')
     parser.add_argument('--lr', type=float, default=1e-3,
@@ -76,7 +79,7 @@ def parse_args():
 
 def main():
     # trainer parameters
-    global args
+    global args, device
     args = parse_args()
 
     if args.gpu_id < 0:
@@ -84,6 +87,7 @@ def main():
     else:
         os.environ["CUDA_VISIBLE_DEVICES"] = str(args.gpu_id)
         device = torch.device("cuda")
+        torch.backends.cudnn.benchmark = True
 
     # create export dir if it doesnt exist
     directory = "{}".format(args.arch)
@@ -100,44 +104,57 @@ def main():
         print(">> Using pre-trained model '{}'".format(args.arch))
     else:
         print(">> Using model from scratch (random weights) '{}'".format(args.arch))
+
+    # load alphabet from file
+    if os.path.isfile(args.alphabet):
+        alphabet = ''
+        with open(args.alphabet, mode='r', encoding='utf-8') as f:
+            for line in f.readlines():
+                alphabet += line.strip()
+        args.alphabet = alphabet
+
     model_params = {}
     model_params['architecture'] = args.arch
     model_params['num_classes'] = len(args.alphabet) + 1
-    model_params['mean'] = [0.396, 0.576, 0.562]
-    model_params['std'] = [0.154, 0.128, 0.130]
+    model_params['mean'] = (0.5,)
+    model_params['std'] = (0.5,)
     model_params['pretrained'] = args.pretrained
     model = init_network(model_params)
     model = model.to(device)
 
     transform = transforms.Compose([
-        transforms.Resize((32, 200)),
+        transforms.Resize((32, 280)),
         transforms.ToTensor(),
         transforms.Normalize(mean=model.meta['mean'], std=model.meta['std']),
     ])
-    train_path = os.path.join(args.training_dataset, 'train')
-    dev_path = os.path.join(args.training_dataset, 'dev')
-    train_dataset = DigitsDataset(train_path, transform=transform)
-    dev_dataset = DigitsDataset(dev_path, transform=transform)
 
-    train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size,
-                                   shuffle=True, num_workers=4, pin_memory=True)
-    dev_loader = data.DataLoader(dev_dataset, batch_size=args.batch_size,
-                                 shuffle=False, num_workers=4, pin_memory=True)
+    train_dataset = DigitsDataset(mode='train', data_root=args.dataset_root, transform=transform)
+    dev_dataset = DigitsDataset(mode='dev', data_root=args.dataset_root, transform=transform)
 
-    criterion = nn.CTCLoss()
+    train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=collate_train,
+                                   shuffle=True, num_workers=args.workers, pin_memory=True)
+    dev_loader = data.DataLoader(dev_dataset, batch_size=args.batch_size, collate_fn=collate_dev,
+                                 shuffle=False, num_workers=args.workers, pin_memory=True)
+
+    criterion = nn.CTCLoss(zero_infinity=True)
     criterion = criterion.to(device)
     # define optimizer
     if args.optimizer == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
+    elif args.optimizer == 'rmsprop':
+        optimizer = optim.RMSprop(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
     elif args.optimizer == 'adam':
         optimizer = optim.Adam(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
 
-    converter = LabelConverter(args.alphabet)
+    converter = LabelConverter(args.alphabet, ignore_case=False)
 
     # define learning rate decay schedule
     # TODO: maybe pass as argument in future implementation?
     exp_decay = math.exp(-0.1)
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=exp_decay)
+    # step_decay = 1
+    # gamma_decay = 0.5
+    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=step_decay, gamma=gamma_decay)
 
     is_best = False
     best_accuracy = 0.0
@@ -157,7 +174,7 @@ def main():
             # test only
             if args.test_only:
                 print('>>>> Test model, using model at epoch: {}'.format(start_epoch))
-                accuracy = validate(dev_loader, model, start_epoch, device, converter)
+                accuracy = validate(dev_loader, model, start_epoch, converter)
                 print('>>>> Accuracy: {}'.format(accuracy))
                 return
             best_accuracy = checkpoint['best_accuracy']
@@ -176,12 +193,12 @@ def main():
         # print('>> Features lr: {:.2e}; Pooling lr: {:.2e}'.format(lr_feat, lr_pool))
 
         # train for one epoch on train set
-        loss = train(train_loader, model, criterion, optimizer, epoch, device, converter)
+        loss = train(train_loader, model, criterion, optimizer, epoch)
 
         # evaluate on validation set
         if (epoch + 1) % args.validate_interval == 0:
             with torch.no_grad():
-                accuracy = validate(dev_loader, model, epoch, device, converter)
+                accuracy = validate(dev_loader, model, epoch, converter)
 
         # # evaluate on test datasets every test_freq epochs
         # if (epoch + 1) % args.test_freq == 0:
@@ -201,7 +218,7 @@ def main():
                 'optimizer' : optimizer.state_dict(),
             }, is_best, args.directory)
 
-def train(train_loader, model, criterion, optimizer, epoch, device, converter):
+def train(train_loader, model, criterion, optimizer, epoch):
     batch_time = AverageMeter()
     data_time = AverageMeter()
     losses = AverageMeter()
@@ -210,9 +227,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, converter):
     model.train()
 
     end = time.time()
-    for i, (images, targets) in enumerate(train_loader):
-        # measure data loading time
-        images = images.to(device)
+    for i, (images, targets, target_lengths) in enumerate(train_loader):
         # measure data loading time
         data_time.update(time.time() - end)
 
@@ -220,15 +235,17 @@ def train(train_loader, model, criterion, optimizer, epoch, device, converter):
         optimizer.zero_grad()
 
         # step 2. Get our inputs images ready for the network.
+        images = images.to(device)
         # targets is a list of `torch.IntTensor` with `batch_size` size.
-        targets, target_lengths = converter.encode(targets)
+        # Expected targets to have CPU Backend
+        target_lengths = target_lengths.to(device)
 
         # step 3. Run out forward pass.
         log_probs = model(images)
 
         # step 4. Compute the loss, gradients, and update the parameters
         # by calling optimizer.step()
-        input_lengths = torch.full((images.shape[0],), log_probs.shape[0], dtype=torch.int)
+        input_lengths = torch.full((images.shape[0],), log_probs.shape[0], dtype=torch.int32, device=device)
         loss = criterion(log_probs, targets, input_lengths, target_lengths)
         losses.update(loss.item())
         loss.backward()
@@ -251,7 +268,7 @@ def train(train_loader, model, criterion, optimizer, epoch, device, converter):
 
     return losses.avg
 
-def validate(dev_loader, model, epoch, device, converter):
+def validate(dev_loader, model, epoch, converter):
     batch_time = AverageMeter()
     accuracy = AverageMeter()
 
@@ -265,7 +282,7 @@ def validate(dev_loader, model, epoch, device, converter):
     for i, (images, targets) in enumerate(dev_loader):
         images = images.to(device)
         log_probs = model(images)
-        preds = converter.best_path_decode(log_probs)
+        preds = converter.best_path_decode(log_probs, strings=False)
 
         # measure elapsed time
         batch_time.update(time.time() - end)
@@ -275,6 +292,7 @@ def validate(dev_loader, model, epoch, device, converter):
             if pred == target:
                 num_correct += 1
         accuracy.update(num_correct / num_verified)
+
         if (i+1) % args.print_freq == 0 or i == 0 or (i+1) == len(dev_loader):
             print('>> Val: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
