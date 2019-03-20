@@ -136,7 +136,8 @@ def main():
     dev_loader = data.DataLoader(dev_dataset, batch_size=args.batch_size, collate_fn=collate_dev,
                                  shuffle=False, num_workers=args.workers, pin_memory=True)
 
-    criterion = nn.CTCLoss(zero_infinity=True)
+    criterion = nn.CTCLoss()
+    # criterion = nn.CTCLoss(zero_infinity=True)
     criterion = criterion.to(device)
     # define optimizer
     if args.optimizer == 'sgd':
