@@ -55,7 +55,7 @@ class DigitsBatchTrain:
         self.images = self.images.pin_memory()
         self.targets = self.targets.pin_memory()
         self.target_lengths = self.target_lengths.pin_memory()
-        return self.images, self.targets, self.target_lengths
+        return self
 
 
 def collate_train(batch):
@@ -70,7 +70,7 @@ class DigitsBatchDev:
 
     def pin_memory(self):
         self.images = self.images.pin_memory()
-        return self.images, self.targets
+        return self
 
 
 def collate_dev(batch):

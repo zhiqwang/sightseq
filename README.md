@@ -10,10 +10,10 @@ PAMI 2017 [[arXiv](https://arxiv.org/abs/1507.05717)]
 
 This code implements: (args.arch)
 
-1. DenseNet + CTCLoss (densenet_cifar, densenet121)
-2. ResNet + CTCLoss (resnet_cifar)
-3. MobileNetV2 + CTCLoss (mobilenetv2_cifar)
-4. ShuffleNetV2 + CTCLoss (shufflenetv2_cifar)
+1. DenseNet + CTCLoss (`densenet_cifar`, `densenet121` with pre-trained model)
+2. ResNet + CTCLoss (`resnet_cifar`)
+3. MobileNetV2 + CTCLoss (`mobilenetv2_cifar` with pre-trained model)
+4. ShuffleNetV2 + CTCLoss (`shufflenetv2_cifar`)
 
 ## Prerequisites
 
@@ -28,7 +28,7 @@ The demo reads an example image and recognizes its text content. See the [demo n
 
 Example image:
 
-![Example Image](./test/54439593_2298493320.jpg)
+![demo](./test/54439593_2298493320.jpg)
 
 Expected output:
 
@@ -37,11 +37,11 @@ Expected output:
 ## Usage
 
 - Navigate (`cd`) to the root of the toolbox `[YOUR_CRNN_ROOT]`.
-- Resize the height of a image to 32, and the width should be divisible by 8.
+- Resize the height of a image to 32, and keep the spatial ratio of the image.
 
 ### Datasets
 
-Refer to YCG09's [SynthText](https://github.com/YCG09/chinese_ocr), the image size is 32x280, origin image can be downloaded from [BaiduYun](https://pan.baidu.com/s/1QkI7kjah8SPHwOQ40rS1Pw) (pw: lu7m), untar it to directory `[DATASET_ROOT_DIR]`.
+Refer to YCG09's [SynthText](https://github.com/YCG09/chinese_ocr), the image size is 32x280, origin image can be downloaded from [BaiduYun](https://pan.baidu.com/s/1QkI7kjah8SPHwOQ40rS1Pw) (pw: lu7m), untar it into the directory `[DATASET_ROOT_DIR]`.
 
 ### Annotation file format
 
@@ -49,7 +49,7 @@ In each line in the annotation file, the format is:
     
     img_path encode1 encode2 encode3 encode4 encode5 ...
 
-where `encode` is the sequence's encode.
+where the `encode` is the sequence's encode instance.
 
 ### Alphabet
 
@@ -57,21 +57,31 @@ Altogether 5989 characters, containing Chinese characters, English letters, numb
 
 ### Pretrained Model
 
-Training with `densenet121` architecture and pre-trained models can be found [OneDrive](https://1drv.ms/u/s!AtlbCejIR3IcgQkwuQkN1aAoPHX8) or [BaiduYun](https://pan.baidu.com/s/163fBRV6S8WgwImPHnee_gg) (pw: riuh). P.S. current pretrained model is rough, I hope that I have time to modify it later.
+For the limitation of gpu, I have only trained the CRNN with `densenet121` architectures for only 1 epoch and `mobilenetv2_cifar` architectures for only 2 epoches.
+
+The pre-trained `densenet121` checkpoint can be found from [OneDrive](https://1drv.ms/u/s!AtlbCejIR3IcgQkwuQkN1aAoPHX8) or [BaiduYun](https://pan.baidu.com/s/163fBRV6S8WgwImPHnee_gg) (pw: riuh) (Trained for 1 epoch, with accuracy 97.55\%), and the pre-trained `mobilenetv2_cifar` checkpoint can be found from [OneDrive](https://1drv.ms/u/s!AtlbCejIR3IcgQphV1H6x1fhEA1S) or [BaiduYun](https://pan.baidu.com/s/1mPwq2ptD-1q-_E-E-Fz8wA)(pw: n2rg) (Trained for 2 epoches, with accuracy 97.83\%).
 
 ### Training
 
 Training strategy:
 
-    python ./main.py --arch densenet121 --alphabet [DATASET_ROOT_DIR]/alphabet_decode_5990.txt --dataset-root [DATASET_ROOT_DIR] --lr 5e-5 --optimizer rmsprop --gpu-id 0 --not-pretrained
+    python ./main.py --dataset-root [DATASET_ROOT_DIR] --arch densenet121
+        --alphabet [DATASET_ROOT_DIR]/alphabet_decode_5990.txt
+        --lr 5e-5 --optimizer rmsprop --gpu-id [GPU-ID]
+        --not-pretrained
+
+The initial learning rate of training `densenet121` architecture is `5e-5`, and the initial learning of training `mobilenetv2_cifar` architecture is `5e-4`.
 
 ### Testing
 
 Use trained model to test:
 
-    python ./main.py --arch densenet121 --alphabet [DATASET_ROOT_DIR]/alphabet_decode_5990.txt --dataset-root [DATASET_ROOT_DIR] --lr 5e-5 --optimizer rmsprop --gpu-id 0 --resume densenet121_pretrained.pth.tar --test-only
+    python ./main.py --dataset-root [DATASET_ROOT_DIR] --arch densenet121
+        --alphabet [DATASET_ROOT_DIR]/alphabet_decode_5990.txt
+        --lr 5e-5 --optimizer rmsprop --gpu-id [GPU-ID]
+        --resume densenet121_pretrained.pth.tar --test-only
 
 ## Reference
-- [crnn.pytorch](https://github.com/meijieru/crnn.pytorch)
+- [CRNN origin pytorch implementation](https://github.com/meijieru/crnn.pytorch)
 - [CIFAR10 with PyTorch](https://github.com/kuangliu/pytorch-cifar)
 - [Efficient densenet pytorch](https://github.com/gpleiss/efficient_densenet_pytorch)

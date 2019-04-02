@@ -123,7 +123,7 @@ def main():
     model = model.to(device)
 
     transform = transforms.Compose([
-        transforms.Resize((32, 280)),
+        transforms.Resize(32), # Resize the height of a image to 32, and keep the spatial ratio of the image.
         transforms.ToTensor(),
         transforms.Normalize(mean=model.meta['mean'], std=model.meta['std']),
     ])
@@ -175,6 +175,7 @@ def main():
             # test only
             if args.test_only:
                 print('>>>> Test model, using model at epoch: {}'.format(start_epoch))
+                start_epoch -= 1
                 accuracy = validate(dev_loader, model, start_epoch, converter)
                 print('>>>> Accuracy: {}'.format(accuracy))
                 return
@@ -228,7 +229,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
     model.train()
 
     end = time.time()
-    for i, (images, targets, target_lengths) in enumerate(train_loader):
+    for i, sample in enumerate(train_loader):
         # measure data loading time
         data_time.update(time.time() - end)
 
@@ -236,10 +237,10 @@ def train(train_loader, model, criterion, optimizer, epoch):
         optimizer.zero_grad()
 
         # step 2. Get our inputs images ready for the network.
-        images = images.to(device)
+        images = sample.images.to(device)
         # targets is a list of `torch.IntTensor` with `batch_size` size.
-        # Expected targets to have CPU Backend
-        target_lengths = target_lengths.to(device)
+        targets = sample.targets # Expected targets to have CPU Backend
+        target_lengths = sample.target_lengths.to(device)
 
         # step 3. Run out forward pass.
         log_probs = model(images)
@@ -280,8 +281,9 @@ def validate(dev_loader, model, epoch, converter):
     num_verified = 0
     end = time.time()
 
-    for i, (images, targets) in enumerate(dev_loader):
-        images = images.to(device)
+    for i, sample in enumerate(dev_loader):
+        images = sample.images.to(device)
+        targets = sample.targets
         log_probs = model(images)
         preds = converter.best_path_decode(log_probs, strings=False)
 
