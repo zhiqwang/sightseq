@@ -1,6 +1,6 @@
 """
 Creates a MobileNetV2 Model as defined in:
-Mark Sandler, Andrew Howard, Menglong Zhu, Andrey Zhmoginov, Liang-Chieh Chen. (2018). 
+Mark Sandler, Andrew Howard, Menglong Zhu, Andrey Zhmoginov, Liang-Chieh Chen. (2018).
 MobileNetV2: Inverted Residuals and Linear Bottlenecks
 arXiv preprint arXiv:1801.04381.
 import from https://github.com/tonylins/pytorch-mobilenet-v2

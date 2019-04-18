@@ -92,12 +92,12 @@ def ctc_beam_search(mat, classes, lm):
 
                 # add beam at current time-step if needed
                 add_beam(curr, new_labeling)
-                
+
                 # fill in data
                 curr.entries[new_labeling].labeling = new_labeling
                 curr.entries[new_labeling].pr_non_blank += pr_non_blank
                 curr.entries[new_labeling].pr_total += pr_non_blank
-                
+
                 # apply LM
                 apply_lm(curr.entries[labeling], curr.entries[new_labeling], classes, lm)
 
