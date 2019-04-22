@@ -7,9 +7,8 @@ from datasets.datahelpers import default_loader
 
 
 class DigitsDataset(data.Dataset):
-    """ Digits dataset."""
+    """Digits dataset."""
     def __init__(self, mode, data_root, transform=None, loader=default_loader):
-        # self.img_names = glob.glob('{}/*.jpg'.format(label_path))
         if not (mode == 'train' or mode == 'dev'):
             raise(RuntimeError("MODE should be either train or dev, passed as string"))
 
@@ -45,9 +44,13 @@ class DigitsDataset(data.Dataset):
 
 
 class DigitsBatchTrain:
-    def __init__(self, batch):
+    """Collate function for train mode."""
+    def __init__(self, batch, keep_ratio=False):
         transposed_data = list(zip(*batch))
-        self.images = torch.stack(transposed_data[0], 0)
+        if keep_ratio:
+            self.images = transposed_data[0]
+        else:
+            self.images = torch.stack(transposed_data[0], 0)
         self.targets = torch.cat(transposed_data[1], 0)
         self.target_lengths = torch.IntTensor([len(i) for i in transposed_data[1]])
 
@@ -58,14 +61,14 @@ class DigitsBatchTrain:
         return self
 
 
-def collate_train(batch):
-    return DigitsBatchTrain(batch)
-
-
 class DigitsBatchDev:
-    def __init__(self, batch):
+    """Collate function for dev mode."""
+    def __init__(self, batch, keep_ratio=False):
         transposed_data = list(zip(*batch))
-        self.images = torch.stack(transposed_data[0], 0)
+        if keep_ratio:
+            self.images = transposed_data[0]
+        else:
+            self.images = torch.stack(transposed_data[0], 0)
         self.targets = [i.tolist() for i in transposed_data[1]]
 
     def pin_memory(self):
@@ -73,5 +76,16 @@ class DigitsBatchDev:
         return self
 
 
-def collate_dev(batch):
-    return DigitsBatchDev(batch)
+class DigitsCollater:
+    """Digits Collater."""
+    def __init__(self, mode, keep_ratio=False):
+        self.mode = mode
+        self.keep_ratio = keep_ratio
+
+    def __call__(self, batch):
+        if self.mode == 'train':
+            return DigitsBatchTrain(batch, self.keep_ratio)
+        elif self.mode == 'dev':
+            return DigitsBatchDev(batch, self.keep_ratio)
+        else:
+            raise(RuntimeError("MODE should be either train or dev, passed as string"))

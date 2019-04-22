@@ -26,14 +26,14 @@ class CRNN(nn.Module):
         super(CRNN, self).__init__()
         self.features = nn.Sequential(*features)
         self.avgpool = nn.AdaptiveAvgPool2d((1, None))
-        self.classifier = nn.Linear(meta['outputdim'], meta['num_classes'])
+        self.classifier = nn.Linear(meta['output_dim'], meta['num_classes'])
 
         self.meta = meta
 
     def forward(self, x):
         # x -> features
         out = self.features(x)
-        # features -> pool -> flatten -> classifier -> softmax
+        # features -> pool -> flatten -> decoder -> softmax
         out = self.avgpool(out)
         out = out.permute(3, 0, 1, 2).view(out.size(3), out.size(0), -1)
         out = self.classifier(out)
@@ -50,7 +50,7 @@ class CRNN(nn.Module):
     def meta_repr(self):
         tmpstr = '  (' + 'meta' + '): dict( \n' # + self.meta.__repr__() + '\n'
         tmpstr += '     architecture: {}\n'.format(self.meta['architecture'])
-        tmpstr += '     outputdim: {}\n'.format(self.meta['outputdim'])
+        tmpstr += '     output dim: {}\n'.format(self.meta['output_dim'])
         tmpstr += '     classes: {}\n'.format(self.meta['num_classes'])
         tmpstr += '     mean: {}\n'.format(self.meta['mean'])
         tmpstr += '     std: {}\n'.format(self.meta['std'])
@@ -103,7 +103,7 @@ def init_network(params):
         'num_classes' : num_classes,
         'mean' : mean,
         'std' : std,
-        'outputdim' : dim,
+        'output_dim' : dim,
     }
 
     # create a generic crnn network

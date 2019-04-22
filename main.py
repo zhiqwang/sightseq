@@ -8,11 +8,12 @@ import contextlib
 import torch
 import torch.optim as optim
 import torch.nn as nn
+from torch.nn.utils.rnn import pad_sequence
 import torch.utils.data as data
 import torchvision.transforms as transforms
 
 from utils.converter import LabelConverter
-from datasets.dataset import DigitsDataset, collate_train, collate_dev
+from datasets.dataset import DigitsDataset, DigitsCollater
 
 import models
 from models.crnn import init_network
@@ -54,8 +55,10 @@ def parse_args():
                         help='batch size to train a model')
     parser.add_argument('--train-samples', default=640000, type=int,
                         help='train sample number')
-    parser.add_argument('--image-size', type=int, default=32,
-                        help='maximum size of longer image side used for training (default: 32)')
+    parser.add_argument('--height', type=int, default=32,
+                        help='image height size used for training (default: 32)')
+    parser.add_argument('--width', type=int, default=200,
+                        help='image width size used for training (default: 200)')
     parser.add_argument('--lr', type=float, default=1e-3,
                         help='initial learning rate (default: 1e-3)')
     parser.add_argument('--decay-rate', type=float, default=0.1,
@@ -74,11 +77,13 @@ def parse_args():
                         help='name of the latest checkpoint (default: None)')
     parser.add_argument('--test-only', action='store_true',
                         help='test only')
+    parser.add_argument('--keep-ratio', action='store_true',
+                        help='keep image size ratio when training')
     args = parser.parse_args()
     return args
 
 def main():
-    # trainer parameters
+    # Set parameters of the trainer
     global args, device
     args = parse_args()
 
@@ -89,10 +94,11 @@ def main():
         device = torch.device("cuda")
         torch.backends.cudnn.benchmark = True
 
-    # create export dir if it doesnt exist
+    # Create export dir if it doesnt exist
     directory = "{}".format(args.arch)
     directory += "_{}_lr{:.1e}_wd{:.1e}".format(args.optimizer, args.lr, args.weight_decay)
-    directory += "_bsize{}_imsize{}".format(args.batch_size, args.image_size)
+    directory += "_bsize{}_height{}".format(args.batch_size, args.height)
+    directory += "_keep_ratio" if args.keep_ratio else "_width{}".format(args.width)
 
     args.directory = os.path.join(args.directory, directory)
     print(">> Creating directory if it does not exist:\n>> '{}'".format(args.directory))
@@ -115,31 +121,39 @@ def main():
 
     model_params = {}
     model_params['architecture'] = args.arch
-    model_params['num_classes'] = len(args.alphabet) + 1
-    model_params['mean'] = (0.5,)
-    model_params['std'] = (0.5,)
+    model_params['num_classes'] = len(args.alphabet) + 1 # Number of classes (excluding blank)
+    # model_params['mean'] = (0.5,)
+    # model_params['std'] = (0.5,)
     model_params['pretrained'] = args.pretrained
     model = init_network(model_params)
     model = model.to(device)
 
+    # Resize the height of an image to 32, and keep the spatial ratio of the image.
+    image_size = args.height if args.keep_ratio else (args.height, args.width)
+
     transform = transforms.Compose([
-        transforms.Resize(32), # Resize the height of a image to 32, and keep the spatial ratio of the image.
+        transforms.Resize(image_size),
         transforms.ToTensor(),
         transforms.Normalize(mean=model.meta['mean'], std=model.meta['std']),
     ])
 
     train_dataset = DigitsDataset(mode='train', data_root=args.dataset_root, transform=transform)
-    dev_dataset = DigitsDataset(mode='dev', data_root=args.dataset_root, transform=transform)
+    train_collate = DigitsCollater(mode='train', keep_ratio=args.keep_ratio)
+    train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size,
+                                   collate_fn=train_collate, shuffle=True,
+                                   num_workers=args.workers, pin_memory=(not args.keep_ratio),
+                                   drop_last=args.keep_ratio)
 
-    train_loader = data.DataLoader(train_dataset, batch_size=args.batch_size, collate_fn=collate_train,
-                                   shuffle=True, num_workers=args.workers, pin_memory=True)
-    dev_loader = data.DataLoader(dev_dataset, batch_size=args.batch_size, collate_fn=collate_dev,
-                                 shuffle=False, num_workers=args.workers, pin_memory=True)
+    dev_dataset = DigitsDataset(mode='dev', data_root=args.dataset_root, transform=transform)
+    dev_collate = DigitsCollater(mode='dev', keep_ratio=args.keep_ratio)
+    dev_loader = data.DataLoader(dev_dataset, batch_size=args.batch_size,
+                                 collate_fn=dev_collate, shuffle=False,
+                                 num_workers=args.workers, pin_memory=(not args.keep_ratio))
 
     criterion = nn.CTCLoss()
     # criterion = nn.CTCLoss(zero_infinity=True)
     criterion = criterion.to(device)
-    # define optimizer
+    # Define optimizer
     if args.optimizer == 'sgd':
         optimizer = optim.SGD(model.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     elif args.optimizer == 'rmsprop':
@@ -149,7 +163,7 @@ def main():
 
     converter = LabelConverter(args.alphabet, ignore_case=False)
 
-    # define learning rate decay schedule
+    # Define learning rate decay schedule
     # TODO: maybe pass as argument in future implementation?
     exp_decay = math.exp(-0.1)
     scheduler = optim.lr_scheduler.ExponentialLR(optimizer, gamma=exp_decay)
@@ -187,27 +201,23 @@ def main():
             print(">> No checkpoint found at '{}'".format(args.resume))
 
     for epoch in range(start_epoch, args.max_epoch):
-        # aujust learning rate for each epoch
+        # Aujust learning rate for each epoch
         scheduler.step()
-        # # debug printing to check if everything ok
-        # lr_feat = optimizer.param_groups[0]['lr']
-        # lr_pool = optimizer.param_groups[1]['lr']
-        # print('>> Features lr: {:.2e}; Pooling lr: {:.2e}'.format(lr_feat, lr_pool))
 
-        # train for one epoch on train set
+        # Train for one epoch on train set
         loss = train(train_loader, model, criterion, optimizer, epoch)
 
-        # evaluate on validation set
+        # Evaluate on validation set
         if (epoch + 1) % args.validate_interval == 0:
             with torch.no_grad():
                 accuracy = validate(dev_loader, model, epoch, converter)
 
-        # # evaluate on test datasets every test_freq epochs
+        # # Evaluate on test datasets every test_freq epochs
         # if (epoch + 1) % args.test_freq == 0:
         #     with torch.no_grad():
         #         test(args.test_datasets, model)
 
-        # remember best accuracy and save checkpoint
+        # Remember best accuracy and save checkpoint
         is_best = accuracy > 0.0 and accuracy >= best_accuracy
         best_accuracy = max(accuracy, best_accuracy)
 
@@ -225,38 +235,48 @@ def train(train_loader, model, criterion, optimizer, epoch):
     data_time = AverageMeter()
     losses = AverageMeter()
 
-    # switch to train mode
+    # Switch to train mode
     model.train()
 
     end = time.time()
     for i, sample in enumerate(train_loader):
-        # measure data loading time
+        # Measure data loading time
         data_time.update(time.time() - end)
 
-        # zero out gradients so we can accumulate new ones over batches
+        # Zero out gradients so we can accumulate new ones over batches
         optimizer.zero_grad()
 
-        # step 2. Get our inputs images ready for the network.
-        images = sample.images.to(device)
+        # step 2. Get our inputs targets ready for the network.
         # targets is a list of `torch.IntTensor` with `batch_size` size.
-        targets = sample.targets # Expected targets to have CPU Backend
         target_lengths = sample.target_lengths.to(device)
+        targets = sample.targets # Expected targets to have CPU Backend
 
         # step 3. Run out forward pass.
-        log_probs = model(images)
+        images = sample.images
+        if isinstance(images, tuple):
+            targets = targets.to(device)
+            log_probs = []
+            for image in images:
+                image = image.unsqueeze(0).to(device)
+                log_prob = model(image).squeeze(1)
+                log_probs.append(log_prob)
+            input_lengths = torch.IntTensor([i.size(0) for i in log_probs]).to(device)
+            log_probs = pad_sequence(log_probs)
+        else: # Batch
+            images = images.to(device)
+            log_probs = model(images)
+            input_lengths = torch.full((images.size(0),), log_probs.size(0), dtype=torch.int32, device=device)
 
         # step 4. Compute the loss, gradients, and update the parameters
         # by calling optimizer.step()
-        input_lengths = torch.full((images.shape[0],), log_probs.shape[0], dtype=torch.int32, device=device)
         loss = criterion(log_probs, targets, input_lengths, target_lengths)
         losses.update(loss.item())
         loss.backward()
 
-        # do one step for multiple batches
-        # accumulated gradients are used
+        # Do one step for multiple batches accumulated gradients are used
         optimizer.step()
 
-        # measure elapsed time
+        # Measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
 
@@ -274,7 +294,7 @@ def validate(dev_loader, model, epoch, converter):
     batch_time = AverageMeter()
     accuracy = AverageMeter()
 
-    # switch to evaluate mode
+    # Switch to evaluate mode
     model.eval()
 
     num_correct = 0
@@ -282,12 +302,20 @@ def validate(dev_loader, model, epoch, converter):
     end = time.time()
 
     for i, sample in enumerate(dev_loader):
-        images = sample.images.to(device)
+        images = sample.images
         targets = sample.targets
-        log_probs = model(images)
-        preds = converter.best_path_decode(log_probs, strings=False)
+        if isinstance(images, tuple):
+            preds = []
+            for image in images:
+                image = image.unsqueeze(0).to(device)
+                log_prob = model(image)
+                preds.append(converter.best_path_decode(log_prob, strings=False))
+        else: # Batch
+            images = images.to(device)
+            log_probs = model(images)
+            preds = converter.best_path_decode(log_probs, strings=False)
 
-        # measure elapsed time
+        # Measure elapsed time
         batch_time.update(time.time() - end)
         end = time.time()
         num_verified += len(targets)
@@ -338,12 +366,12 @@ class AverageMeter(object):
 def set_batchnorm_eval(m):
     classname = m.__class__.__name__
     if classname.find('BatchNorm') != -1:
-        # freeze running mean and std:
+        # Freeze running mean and std:
         # we do training one image at a time
         # so the statistics would not be per batch
         # hence we choose freezing (ie using imagenet statistics)
         m.eval()
-        # # freeze parameters:
+        # # Freeze parameters:
         # # in fact no need to freeze scale and bias
         # # they can be learned
         # # that is why next two lines are commented

@@ -22,7 +22,7 @@ class LabelConverter(object):
 
         self.dict = {}
         for i, char in enumerate(alphabet):
-            # NOTE: 0 is reserved for 'blank' required by wrap_ctc
+            # NOTE: 0 is reserved for 'blank' required by CTCLoss
             self.dict[char] = i + 1
 
     def encode(self, labels):
@@ -32,8 +32,7 @@ class LabelConverter(object):
             labels (str or list of str): labels to convert.
 
         Returns:
-            torch.IntTensor [length_0 + length_1 + ...
-                length_{n - 1}]: encoded labels.
+            torch.IntTensor [length_0 + length_1 + ... length_{n-1}]: encoded labels.
             torch.IntTensor [n]: length of each labels.
         """
         if isinstance(labels, str):
@@ -69,6 +68,7 @@ class LabelConverter(object):
             else:
                 probs_non_blank = []
                 for i in range(length):
+                    # removing repeated characters and blank.
                     if (probs[i] != 0 and (not (i > 0 and probs[i - 1] == probs[i]))):
                         if strings:
                             probs_non_blank.append(self.alphabet[probs[i] - 1])
