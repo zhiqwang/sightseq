@@ -1,6 +1,6 @@
-import os
 import torch
 from collections.abc import Iterable
+
 
 class LabelConverter(object):
     """Convert between str and label.
@@ -83,9 +83,10 @@ class LabelConverter(object):
             labels = []
             index = 0
             for i in range(length.numel()):
-                l = length[i]
-                labels.append(self.decode(probs[index:index + l], torch.IntTensor([l]), raw=raw, strings=strings))
-                index += l
+                idx_end = length[i]
+                labels.append(self.decode(probs[index:index + idx_end],
+                              torch.IntTensor([idx_end]), raw=raw, strings=strings))
+                index += idx_end
             return labels
 
     def best_path_decode(self, probs, raw=False, strings=True):

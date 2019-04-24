@@ -48,7 +48,7 @@ class CRNN(nn.Module):
         return tmpstr
 
     def meta_repr(self):
-        tmpstr = '  (' + 'meta' + '): dict( \n' # + self.meta.__repr__() + '\n'
+        tmpstr = '  (' + 'meta' + '): dict( \n'  # + self.meta.__repr__() + '\n'
         tmpstr += '     architecture: {}\n'.format(self.meta['architecture'])
         tmpstr += '     output dim: {}\n'.format(self.meta['output_dim'])
         tmpstr += '     classes: {}\n'.format(self.meta['num_classes'])
@@ -99,11 +99,11 @@ def init_network(params):
 
     # create meta information to be stored in the network
     meta = {
-        'architecture' : architecture,
-        'num_classes' : num_classes,
-        'mean' : mean,
-        'std' : std,
-        'output_dim' : dim,
+        'architecture': architecture,
+        'num_classes': num_classes,
+        'mean': mean,
+        'std': std,
+        'output_dim': dim,
     }
 
     # create a generic crnn network

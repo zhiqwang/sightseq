@@ -163,9 +163,11 @@ def densenet_cifar(pretrained=False, **kwargs):
     model = DenseNet(num_init_features=24, growth_rate=12, block_config=(16, 16, 16), **kwargs)
     return model
 
+
 def densenet121(pretrained=False, **kwargs):
     model = DenseNet(num_init_features=24, growth_rate=12, block_config=(6, 12, 24, 16), **kwargs)
     return model
+
 
 if __name__ == '__main__':
 

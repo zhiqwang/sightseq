@@ -24,9 +24,9 @@ warnings.filterwarnings("always")
 # from tensorboardX import SummaryWriter
 # writer = SummaryWriter('./data/runs')
 model_names = sorted(name for name in models.__dict__
-    if name.islower() and not name.startswith("__")
-    and callable(models.__dict__[name]))
+                     if name.islower() and not name.startswith("__") and callable(models.__dict__[name]))
 optimizer_names = ["sgd", "adam", "rmsprop"]
+
 
 def parse_args():
     '''Parse input arguments.'''
@@ -82,6 +82,7 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+
 def main():
     # Set parameters of the trainer
     global args, device
@@ -121,7 +122,7 @@ def main():
 
     model_params = {}
     model_params['architecture'] = args.arch
-    model_params['num_classes'] = len(args.alphabet) + 1 # Number of classes (excluding blank)
+    model_params['num_classes'] = len(args.alphabet) + 1  # Number of classes (excluding blank)
     # model_params['mean'] = (0.5,)
     # model_params['std'] = (0.5,)
     model_params['pretrained'] = args.pretrained
@@ -205,7 +206,7 @@ def main():
         scheduler.step()
 
         # Train for one epoch on train set
-        loss = train(train_loader, model, criterion, optimizer, epoch)
+        _ = train(train_loader, model, criterion, optimizer, epoch)
 
         # Evaluate on validation set
         if (epoch + 1) % args.validate_interval == 0:
@@ -227,8 +228,9 @@ def main():
                 'epoch': epoch + 1,
                 'state_dict': model.state_dict(),
                 'best_accuracy': best_accuracy,
-                'optimizer' : optimizer.state_dict(),
+                'optimizer': optimizer.state_dict(),
             }, is_best, args.directory)
+
 
 def train(train_loader, model, criterion, optimizer, epoch):
     batch_time = AverageMeter()
@@ -249,7 +251,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
         # step 2. Get our inputs targets ready for the network.
         # targets is a list of `torch.IntTensor` with `batch_size` size.
         target_lengths = sample.target_lengths.to(device)
-        targets = sample.targets # Expected targets to have CPU Backend
+        targets = sample.targets  # Expected targets to have CPU Backend
 
         # step 3. Run out forward pass.
         images = sample.images
@@ -262,7 +264,7 @@ def train(train_loader, model, criterion, optimizer, epoch):
                 log_probs.append(log_prob)
             input_lengths = torch.IntTensor([i.size(0) for i in log_probs]).to(device)
             log_probs = pad_sequence(log_probs)
-        else: # Batch
+        else:  # Batch
             images = images.to(device)
             log_probs = model(images)
             input_lengths = torch.full((images.size(0),), log_probs.size(0), dtype=torch.int32, device=device)
@@ -280,15 +282,16 @@ def train(train_loader, model, criterion, optimizer, epoch):
         batch_time.update(time.time() - end)
         end = time.time()
 
-        if (i+1) % args.print_freq == 0 or i == 0 or (i+1) == len(train_loader):
+        if (i + 1) % args.print_freq == 0 or i == 0 or (i + 1) == len(train_loader):
             print('>> Train: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Data {data_time.val:.3f} ({data_time.avg:.3f})\t'
                   'Loss {loss.val:.4f} ({loss.avg:.4f})'.format(
-                   epoch+1, i+1, len(train_loader), batch_time=batch_time,
-                   data_time=data_time, loss=losses))
+                      epoch + 1, i + 1, len(train_loader), batch_time=batch_time,
+                      data_time=data_time, loss=losses))
 
     return losses.avg
+
 
 def validate(dev_loader, model, epoch, converter):
     batch_time = AverageMeter()
@@ -310,7 +313,7 @@ def validate(dev_loader, model, epoch, converter):
                 image = image.unsqueeze(0).to(device)
                 log_prob = model(image)
                 preds.append(converter.best_path_decode(log_prob, strings=False))
-        else: # Batch
+        else:  # Batch
             images = images.to(device)
             log_probs = model(images)
             preds = converter.best_path_decode(log_probs, strings=False)
@@ -324,13 +327,14 @@ def validate(dev_loader, model, epoch, converter):
                 num_correct += 1
         accuracy.update(num_correct / num_verified)
 
-        if (i+1) % args.print_freq == 0 or i == 0 or (i+1) == len(dev_loader):
+        if (i + 1) % args.print_freq == 0 or i == 0 or (i + 1) == len(dev_loader):
             print('>> Val: [{0}][{1}/{2}]\t'
                   'Time {batch_time.val:.3f} ({batch_time.avg:.3f})\t'
                   'Accu {accuracy.val:.3f}'.format(
-                   epoch+1, i+1, len(dev_loader), batch_time=batch_time, accuracy=accuracy))
+                      epoch + 1, i + 1, len(dev_loader), batch_time=batch_time, accuracy=accuracy))
 
     return accuracy.val
+
 
 def save_checkpoint(state, is_best, directory):
     filename = os.path.join(directory, '{}_epoch_{}.pth.tar'.format(state['arch'], state['epoch']))
@@ -376,7 +380,8 @@ def set_batchnorm_eval(m):
         # # they can be learned
         # # that is why next two lines are commented
         # for p in m.parameters():
-            # p.requires_grad = False
+        #     p.requires_grad = False
+
 
 if __name__ == '__main__':
     main()

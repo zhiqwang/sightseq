@@ -13,6 +13,7 @@ import math
 
 __all__ = ['MobileNetV2', 'mobilenetv2_cifar']
 
+
 def _make_divisible(v, divisor, min_value=None):
     """
     This function is taken from the original tf repo.
@@ -79,19 +80,19 @@ class MobileNetV2(nn.Module):
         # setting of inverted residual blocks
         self.cfgs = [
             # expansion, planes, num_blocks, stride
-            [1,  16, 1, 1],
-            [6,  24, 2, 2],
-            [6,  32, 3, 2],
-            [6,  64, 4, 2],
-            [6,  96, 3, 1],
+            [1, 16, 1, 1],
+            [6, 24, 2, 2],
+            [6, 32, 3, 2],
+            [6, 64, 4, 2],
+            [6, 96, 3, 1],
             [6, 160, 3, 2],
             [6, 320, 1, 1],
         ]
         if small_inputs:
-            self.cfgs[1] =  [6, 24, 2, 1] # NOTE: change stride 2 -> 1 for CIFAR10
+            self.cfgs[1] = [6, 24, 2, 1]  # NOTE: change stride 2 -> 1 for CIFAR10
         # First convolution
         num_init_features = _make_divisible(32 * width_mult, 8)
-        stride = 1 if small_inputs else 2 # NOTE: change stride 2 -> 1 for CIFAR10
+        stride = 1 if small_inputs else 2  # NOTE: change stride 2 -> 1 for CIFAR10
         self.features = nn.Sequential(OrderedDict([
             ('conv0', nn.Conv2d(3, num_init_features, 3, stride, 1, bias=False)),
             ('norm0', nn.BatchNorm2d(num_init_features)),
@@ -146,6 +147,7 @@ class MobileNetV2(nn.Module):
 def mobilenetv2_cifar(pretrained=False, **kwargs):
     model = MobileNetV2(InvertedResidual, **kwargs)
     return model
+
 
 if __name__ == '__main__':
 

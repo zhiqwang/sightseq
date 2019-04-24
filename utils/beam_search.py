@@ -4,12 +4,12 @@ import numpy as np
 class BeamEntry:
     '''information about one single beam at specific time-step'''
     def __init__(self):
-        self.pr_total = 0 # blank and non-blank
-        self.pr_non_blank = 0 # non-blank
-        self.pr_blank = 0 # blank
-        self.pr_text = 1 # LM score
-        self.lm_applied = False # flag if LM was already applied to this beam
-        self.labeling = () # beam-labeling
+        self.pr_total = 0  # blank and non-blank
+        self.pr_non_blank = 0  # non-blank
+        self.pr_blank = 0  # blank
+        self.pr_text = 1  # LM score
+        self.lm_applied = False  # flag if LM was already applied to this beam
+        self.labeling = ()  # beam-labeling
 
 
 class BeamState:
@@ -26,7 +26,7 @@ class BeamState:
     def sort(self):
         '''return beam-labelings, sorted by probability'''
         beams = [v for (_, v) in self.entries.items()]
-        sorted_beams = sorted(beams, reverse=True, key=lambda x: x.pr_total*x.pr_text)
+        sorted_beams = sorted(beams, reverse=True, key=lambda x: x.pr_total * x.pr_text)
         return [x.labeling for x in sorted_beams]
 
 
@@ -107,8 +107,8 @@ def ctc_beam_search(mat, classes, lm):
     # normalise LM scores according to beam-labeling-length
     last.norm()
 
-     # sort by probability
-    best_labeling = last.sort()[0] # get most probable labeling
+    # sort by probability
+    best_labeling = last.sort()[0]  # get most probable labeling
 
     # map labels to chars
     res = ''
@@ -116,6 +116,7 @@ def ctc_beam_search(mat, classes, lm):
         res += classes[l]
 
     return res
+
 
 def apply_lm(parent_beam, child_beam, classes, lm):
     '''calculate LM score of child beam by taking score from parent
@@ -135,10 +136,12 @@ def apply_lm(parent_beam, child_beam, classes, lm):
         # only apply LM once per beam entry
         child_beam.lm_applied = True
 
+
 def add_beam(beam_state, labeling):
     '''add beam if it does not yet exist'''
     if labeling not in beam_state.entries:
         beam_state.entries[labeling] = BeamEntry()
+
 
 def test_beam_search():
     '''test decoder'''

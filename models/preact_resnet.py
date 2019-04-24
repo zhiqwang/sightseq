@@ -104,6 +104,7 @@ def resnet_cifar(pretrained=False, **kwargs):
     model = ResNet(PreActBlock, [2, 2, 2, 2], **kwargs)
     return model
 
+
 if __name__ == '__main__':
     model = ResNet(PreActBlock, [2, 2, 2, 2])
     y = model((torch.randn(1, 3, 32, 32)))

@@ -15,10 +15,10 @@ class ShuffleBlock(nn.Module):
         self.groups = groups
 
     def forward(self, x):
-        '''Channel shuffle: [N, C, H, W] -> [N, g, C/g, H, W] -> [N, C/g, g, H, w] -> [N, C, H, W]'''
+        '''Channel shuffle: [N, C, H, W] -> [N, g, C/g, H, W] -> [N, C / g, g, H, w] -> [N, C, H, W]'''
         N, C, H, W = x.size()
         g = self.groups
-        return x.view(N, g, C//g, H, W).permute(0, 2, 1, 3, 4).contiguous().view(N, C, H, W)
+        return x.view(N, g, C // g, H, W).permute(0, 2, 1, 3, 4).contiguous().view(N, C, H, W)
 
 
 class SplitBlock(nn.Module):
@@ -91,14 +91,14 @@ class InvertedResidual(nn.Module):
 
 class ShuffleNetV2(nn.Module):
 
-    def __init__(self, downsample_block, basic_block, width_mult=1, num_classes=10, small_inputs=True):
+    def __init__(self, downsample_block, basic_block, width_mult=1.0, num_classes=10, small_inputs=True):
         super(ShuffleNetV2, self).__init__()
         self.small_inputs = small_inputs
         self.cfg = {
-            0.5 : ( 48,  96, 192, 1024),
-            1   : (116, 232, 464, 1024),
-            1.5 : (176, 352, 704, 1024),
-            2   : (224, 488, 976, 2048),
+            0.5: (48, 96, 192, 1024),
+            1.0: (116, 232, 464, 1024),
+            1.5: (176, 352, 704, 1024),
+            2.0: (224, 488, 976, 2048),
         }
 
         stage_out_planes = self.cfg[width_mult]
@@ -108,7 +108,7 @@ class ShuffleNetV2(nn.Module):
         self.basic_block = basic_block
         self.inplanes = 24
         outplanes = stage_out_planes[3]
-        stride = 1 if small_inputs else 2 # NOTE: change conv1 stride 2 -> 1 for CIFAR10
+        stride = 1 if small_inputs else 2  # NOTE: change conv1 stride 2 -> 1 for CIFAR10
         self.conv1 = nn.Conv2d(3, self.inplanes, kernel_size=3, stride=stride, padding=1, bias=False)
         self.bn1 = nn.BatchNorm2d(self.inplanes)
         self.relu = nn.ReLU(inplace=True)
@@ -129,7 +129,7 @@ class ShuffleNetV2(nn.Module):
 
     def forward(self, x):
         out = self.relu(self.bn1(self.conv1(x)))
-        if not self.small_inputs: # NOTE: Undo MaxPool for CIFAR10
+        if not self.small_inputs:  # NOTE: Undo MaxPool for CIFAR10
             out = F.max_pool2d(out, 3, stride=2, padding=1)
         out = self.layer1(out)
         out = self.layer2(out)
@@ -142,8 +142,9 @@ class ShuffleNetV2(nn.Module):
 
 
 def shufflenetv2_cifar(pretrained=False, **kwargs):
-    model = ShuffleNetV2(DownsampleBlock, InvertedResidual, width_mult=1, **kwargs)
+    model = ShuffleNetV2(DownsampleBlock, InvertedResidual, width_mult=1.0, **kwargs)
     return model
+
 
 if __name__ == '__main__':
 
