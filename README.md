@@ -10,10 +10,12 @@ PAMI 2017 [[arXiv](https://arxiv.org/abs/1507.05717)]
 
 This code implements: (args.arch)
 
-1. DenseNet + CTCLoss (`densenet_cifar`, `densenet121` with pre-trained model)
-2. ResNet + CTCLoss (`resnet_cifar`)
-3. MobileNetV2 + CTCLoss (`mobilenetv2_cifar` with pre-trained model)
-4. ShuffleNetV2 + CTCLoss (`shufflenetv2_cifar`)
+1. DenseNet + CTC loss (`densenet_cifar`, `densenet121` with pre-trained model)
+2. ResNet + CTC loss (`resnet_cifar`)
+3. MobileNetV2 + CTC loss (`mobilenetv2_cifar` with pre-trained model)
+4. ShuffleNetV2 + CTC loss (`shufflenetv2_cifar`)
+
+**Remark:** Current network architecture only implement `CNN backbone` + `Fully connected layers (FC)` + `CTC loss`. Where the `CNN` acts as a subsample and encoder layer, the `FC` acts as a decoder layer, and the `CTC loss` here acts as a justification of a sequence's labels with previous network's forecasting. More detail refer to [issue #4](https://github.com/zhiqwang/crnn.pytorch/issues/4) and [issue #6](https://github.com/zhiqwang/crnn.pytorch/issues/6).
 
 ## Prerequisites
 
@@ -55,7 +57,7 @@ For example, there is task identifying numbers of an image, the `Alphabet` is "0
 
     00320_00091.jpg 10 10 4 6 4 4 7 2 1 6 7 8 5 3
 
-*Note.* the encoder code `0` is reserved for *CTC blank token*.
+*Note:* the encoder code `0` is reserved for *CTC blank token*.
 
 ### Alphabet
 
