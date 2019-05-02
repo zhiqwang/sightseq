@@ -191,7 +191,8 @@ def main():
             if args.test_only:
                 print('>>>> Test model, using model at epoch: {}'.format(start_epoch))
                 start_epoch -= 1
-                accuracy = validate(dev_loader, model, start_epoch, converter)
+                with torch.no_grad():
+                    accuracy = validate(dev_loader, model, start_epoch, converter)
                 print('>>>> Accuracy: {}'.format(accuracy))
                 return
             best_accuracy = checkpoint['best_accuracy']
