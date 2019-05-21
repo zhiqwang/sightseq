@@ -1,5 +1,7 @@
 # Convolutional Recurrent Neural Network
 
+**Update 2019-05-21:** I rewrite this repo base on [fairseq](https://github.com/pytorch/fairseq), refer to my implementation [here](https://github.com/zhiqwang/fairseq/tree/text-recognition). And the fairseq text recognition is under construction. Very pleasure for suggestion and cooperation in the fairseq text recognition project.
+
 This software implements the Convolutional Recurrent Neural Network (CRNN) in pytorch in paper:
 
 **An End-to-End Trainable Neural Network for Image-based Sequence Recognition and Its Application to Scene Text Recognition**,
