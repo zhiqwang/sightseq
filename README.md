@@ -6,7 +6,7 @@ It provides reference implementations of various image captioning models, includ
 - **Convolutional Recurrent Neural Network (CRNN)**
   - [Shi et al. (2015): An End-to-End Trainable Neural Network for Image-based Sequence Recognition and Its Application to Scene Text Recognition](https://arxiv.org/abs/1507.05717)
 - **Attention networks**
-- **Transformer networks (TODO)**
+- **Transformer networks**
 
 ## Features
 
@@ -37,7 +37,7 @@ For example, there is task identifying numbers of an image, the `Alphabet` is "0
 
     00120_00091.jpg 9 9 3 5 3 3 6 1 0 5 6 7 4 2
 
-### Preprocess
+### Preprocess (TODO)
 
 ### Training
 
@@ -51,6 +51,18 @@ Training strategy (Attention):
         --optimizer adam --adam-eps 1e-04 --lr 0.001 --min-lr 1e-09 \
         --adam-betas '(0.9, 0.98)' --clip-norm 0.0 --weight-decay 0.0 \
         --no-token-crf --save-interval 1
+
+Training strategy (Transformer):
+
+    python -m image_captioning.train [DATA] \
+        --task image_captioning --arch decoder_transformer \
+        --batch-size 16 --dropout 0.0  --max-epoch 100 \
+        --backbone densenet121 --criterion cross_entropy \
+        --num-workers 4 --optimizer adam --decoder-layers 2 \
+        --adam-eps 1e-04 --lr 0.001 --min-lr 1e-09 \
+        --adam-betas '(0.9, 0.98)' --clip-norm 0.0 \
+        --weight-decay 0.0 --no-token-crf --no-token-rnn \
+        --save-interval 1 --encoder-normalize-before
 
 Training strategy (CRNN):
 
@@ -67,17 +79,25 @@ Training strategy (CRNN):
 Use trained model to test (Attention):
 
     python -m image_captioning.generate [DATA] \
-        --arch decoder_attention --path checkpoints/checkpoint_best.pt \
+        --arch decoder_attention --path [SAVE_DIR]/checkpoint_best.pt \
         --decoder-embed-dim 384 --backbone densenet121 \
         --task text_recognition \
-        --buffer-size 4 --num-workers 4 --gen-subset valid \
-        --beam 1 --batch-size 4 --quiet
+        --buffer-size 16 --num-workers 4 --gen-subset valid \
+        --beam 5 --batch-size 16 --quiet
+
+Use trained model to test (Transformer):
+
+    python -m image_captioning.generate [DATA] \
+        --arch decoder_transformer --path [SAVE_DIR]/checkpoint_best.pt \
+        --task image_captioning \
+        --buffer-size 16 --num-workers 4 --gen-subset valid \
+        --batch-size 16 --beam 5 --quiet
 
 Use trained model to test (CRNN):
 
     python -m image_captioning.generate [DATA] \
-        --arch decoder_crnn --path checkpoints/checkpoint_best.pt \
+        --arch decoder_crnn --path [SAVE_DIR]/checkpoint_best.pt \
         --task text_recognition --criterion ctc_loss \
         --sacrebleu \
-        --buffer-size 4 --num-workers 4 --gen-subset valid \
-        --batch-size 4 --quiet
+        --buffer-size 16 --num-workers 4 --gen-subset valid \
+        --batch-size 16 --quiet
