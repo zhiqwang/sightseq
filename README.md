@@ -1,18 +1,20 @@
 # Introduction
 
-**Update June 11, 2019:** I rewrite this text recognition repo base on [fairseq](https://github.com/pytorch/fairseq). Stable version refer to branch [crnn](https://github.com/zhiqwang/image-captioning/tree/crnn), which provides pre-trained model checkpoints. Current branch is under construction. Very pleasure for suggestion and cooperation in the fairseq text recognition project.
-
-It provides reference implementations of various image captioning models, including:
+Image-captioning is a modular framework for vision and language multimodal research. It provides reference implementations of various image captioning models, including:
 - **Convolutional Recurrent Neural Network (CRNN)**
   - [Shi et al. (2015): An End-to-End Trainable Neural Network for Image-based Sequence Recognition and Its Application to Scene Text Recognition](https://arxiv.org/abs/1507.05717)
 - **Attention networks**
 - **Transformer networks**
 
-## Features
+Image captioning features
 
 - All features of Fairseq
 - Flexible to enable convolution layer, recurrent layer in CRNN
 - Positional Encoding of images
+
+## Updates
+
+**June 11, 2019:** I rewrite this text recognition repo base on [fairseq](https://github.com/pytorch/fairseq). Stable version refer to branch [crnn](https://github.com/zhiqwang/image-captioning/tree/crnn), which provides pre-trained model checkpoints. Current branch is under construction. Very pleasure for suggestion and cooperation in the fairseq text recognition project.
 
 ## Requirements and Installation
 
@@ -25,7 +27,7 @@ It provides reference implementations of various image captioning models, includ
 
 - Navigate (`cd`) to the root of the toolbox `[YOUR_IMAGE_CAPTIONING_ROOT]`.
 
-### Annotation file format
+## Annotation file format
 
 In each line in the annotation file, the format is:
 
@@ -37,9 +39,15 @@ For example, there is task identifying numbers of an image, the `Alphabet` is "0
 
     00120_00091.jpg 9 9 3 5 3 3 6 1 0 5 6 7 4 2
 
-### Preprocess (TODO)
+## Preprocess
 
-### Training
+Generate `dict.txt` strategy:
+
+    python -m image_captioning.preprocess --task text_recognition \
+        --trainpref [DATA]/train.txt \
+        --destdir [DATA] --padding-factor 1
+
+## Training
 
 Training strategy (Attention):
 
@@ -74,7 +82,7 @@ Training strategy (CRNN):
         --adam-betas '(0.9, 0.98)' --clip-norm 0.0 --weight-decay 0.0 \
         --save-interval 1
 
-### Testing
+## Testing
 
 Use trained model to test (Attention):
 

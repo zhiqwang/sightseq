@@ -6,6 +6,7 @@ import torchvision.transforms as transforms
 
 from fairseq.tasks import FairseqTask, register_task
 from fairseq.data import Dictionary
+from image_captioning import tokenizer
 from image_captioning.data import CTCLossDictionary, TextRecognitionDataset
 
 
@@ -35,19 +36,6 @@ class TextRecognitionTask(FairseqTask):
                             help='training using pined memory')
         # fmt: on
 
-    @classmethod
-    def setup_task(cls, args, **kwargs):
-        """Setup the task (e.g., load dictionaries).
-
-        Args:
-            args (argparse.Namespace): parsed command-line arguments
-        """
-        use_ctc_loss = True if args.criterion == 'ctc_loss' else False
-        tgt_dict = cls.load_dictionary(os.path.join(args.data, 'dict.txt'), use_ctc_loss)
-        print('| target dictionary: {} types'.format(len(tgt_dict)))
-
-        return cls(args, tgt_dict)
-
     def __init__(self, args, tgt_dict):
         super().__init__(args)
         self.tgt_dict = tgt_dict
@@ -62,6 +50,39 @@ class TextRecognitionTask(FairseqTask):
         if use_ctc_loss:
             return CTCLossDictionary.load(filename)
         return Dictionary.load(filename)
+
+    @classmethod
+    def build_dictionary(cls, filenames, workers=1, threshold=-1, nwords=-1, padding_factor=8):
+        """Build the dictionary
+
+        Args:
+            filenames (list): list of filenames
+            workers (int): number of concurrent workers
+            threshold (int): defines the minimum word count
+            nwords (int): defines the total number of words in the final dictionary,
+                including special symbols
+            padding_factor (int): can be used to pad the dictionary size to be a
+                multiple of 8, which is important on some hardware (e.g., Nvidia
+                Tensor Cores).
+        """
+        d = Dictionary()
+        for filename in filenames:
+            Dictionary.add_file_to_dictionary(filename, d, tokenizer.tokenize_line, workers)
+        d.finalize(threshold=threshold, nwords=nwords, padding_factor=padding_factor)
+        return d
+
+    @classmethod
+    def setup_task(cls, args, **kwargs):
+        """Setup the task (e.g., load dictionaries).
+
+        Args:
+            args (argparse.Namespace): parsed command-line arguments
+        """
+        use_ctc_loss = True if args.criterion == 'ctc_loss' else False
+        tgt_dict = cls.load_dictionary(os.path.join(args.data, 'dict.txt'), use_ctc_loss)
+        print('| target dictionary: {} types'.format(len(tgt_dict)))
+
+        return cls(args, tgt_dict)
 
     def load_dataset(self, split, **kwargs):
         """Load a given dataset split.
