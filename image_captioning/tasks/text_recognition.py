@@ -9,6 +9,9 @@ from fairseq.data import Dictionary
 from image_captioning import tokenizer
 from image_captioning.data import CTCLossDictionary, TextRecognitionDataset
 
+CHANNEL_MEAN = [0.396, 0.576, 0.562]
+CHANNEL_STD = [0.154, 0.128, 0.130]
+
 
 @register_task('text_recognition')
 class TextRecognitionTask(FairseqTask):
@@ -39,6 +42,8 @@ class TextRecognitionTask(FairseqTask):
     def __init__(self, args, tgt_dict):
         super().__init__(args)
         self.tgt_dict = tgt_dict
+        self.mean = CHANNEL_MEAN
+        self.std = CHANNEL_STD
 
     @classmethod
     def load_dictionary(cls, filename, use_ctc_loss):
@@ -106,15 +111,12 @@ class TextRecognitionTask(FairseqTask):
         assert len(image_names) == len(targets) == len(target_lengths)
         print('| {} {} {} images'.format(self.args.data, split, len(image_names)))
 
-        mean = [0.396, 0.576, 0.562]
-        std = [0.154, 0.128, 0.130]
-
         image_size = self.args.height if self.args.keep_ratio else (self.args.height, self.args.width)
 
         transform = transforms.Compose([
             transforms.Resize(image_size),
             transforms.ToTensor(),
-            transforms.Normalize(mean=mean, std=std),
+            transforms.Normalize(mean=self.mean, std=self.std),
         ])
 
         shuffle = True if split == 'train' else False

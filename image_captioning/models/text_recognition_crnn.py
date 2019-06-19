@@ -137,6 +137,8 @@ class CRNNDecoder(FairseqDecoder):
             # Sum bidirectional RNN xputs
             if self.bidirectional:
                 x = x[:, :, :self.hidden_size] + x[:, :, self.hidden_size:]
+        else:
+            x = encoder_outs
 
         x = self.classifier(x)
 
