@@ -43,8 +43,8 @@ class TextRecognitionCRNNModel(FairseqEncoderDecoderModel):
         # fmt: off
         parser.add_argument('--dropout', type=float, metavar='D',
                             help='dropout probability')
-        parser.add_argument('--backbone', default='densenet_cifar',
-                            help='CNN backbone architecture. (default: densenet_cifar)')
+        parser.add_argument('--backbone', default='densenet121',
+                            help='CNN backbone architecture. (default: densenet121)')
         parser.add_argument('--pretrained', action='store_true', help='pretrained')
         parser.add_argument('--decoder-embed-dim', type=int, metavar='N',
                             help='decoder embedding dimension')
@@ -155,7 +155,7 @@ class CRNNDecoder(FairseqDecoder):
 @register_model_architecture('text_recognition_crnn', 'text_recognition_crnn')
 def base_architecture(args):
     args.dropout = getattr(args, 'dropout', 0.1)
-    args.backbone = getattr(args, 'backbone', 'densenet_cifar')
+    args.backbone = getattr(args, 'backbone', 'densenet121')
     args.pretrained = getattr(args, 'pretrained', False)
     args.decoder_embed_dim = getattr(args, 'decoder_embed_dim', 512)
     args.decoder_hidden_size = getattr(args, 'decoder_hidden_size', args.decoder_embed_dim)

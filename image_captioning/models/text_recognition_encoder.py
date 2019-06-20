@@ -15,11 +15,17 @@ FEATURES = {}
 
 # output dimensionality for supported architectures
 OUTPUT_DIM = {
-    'resnet_cifar': 512,
+    'resnet18': 512,
+    'resnet34': 512,
+    'resnet50': 2048,
+    'resnet101': 2048,
+    'resnet152': 2048,
     'densenet_cifar': 342,
-    'densenet121': 384,
-    'mobilenetv2_cifar': 1280,
-    'shufflenetv2_cifar': 1024,
+    'densenet121': 512,
+    'densenet161': 2208,
+    'densenet169': 1664,
+    'densenet201': 1920,
+    'mobilenet_v2': 1280,
 }
 
 
@@ -133,8 +139,6 @@ class TextRecognitionEncoder(FairseqEncoder):
             features = list(net_in.features.children())
             features.append(nn.ReLU(inplace=True))
         elif backbone.startswith('mobilenetv2'):
-            features = list(net_in.children())[:-2]
-        elif backbone.startswith('shufflenetv2'):
             features = list(net_in.children())[:-2]
         else:
             raise ValueError('Unsupported or unknown architecture: {}!'.format(backbone))

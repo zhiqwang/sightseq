@@ -36,8 +36,8 @@ class TextRecognitionAttnModel(FairseqEncoderDecoderModel):
         # fmt: off
         parser.add_argument('--dropout', type=float, metavar='D',
                             help='dropout probability')
-        parser.add_argument('--backbone', default='densenet_cifar',
-                            help='CNN backbone architecture. (default: densenet_cifar)')
+        parser.add_argument('--backbone', default='densenet121',
+                            help='CNN backbone architecture. (default: densenet121)')
         parser.add_argument('--pretrained', action='store_true', help='pretrained')
         parser.add_argument('--decoder-embed-dim', type=int, metavar='N',
                             help='decoder embedding dimension')
@@ -133,11 +133,11 @@ class TextRecognitionAttnModel(FairseqEncoderDecoderModel):
 @register_model_architecture('text_recognition_attn', 'text_recognition_attn')
 def base_architecture(args):
     args.dropout = getattr(args, 'dropout', 0.1)
-    args.backbone = getattr(args, 'backbone', 'densenet_cifar')
+    args.backbone = getattr(args, 'backbone', 'densenet121')
     args.pretrained = getattr(args, 'pretrained', False)
     args.encoder_dropout_in = getattr(args, 'encoder_dropout_in', args.dropout)
     args.encoder_dropout_out = getattr(args, 'encoder_dropout_out', args.dropout)
-    args.decoder_embed_dim = getattr(args, 'decoder_embed_dim', 342)
+    args.decoder_embed_dim = getattr(args, 'decoder_embed_dim', 512)
     args.decoder_hidden_size = getattr(args, 'decoder_hidden_size', args.decoder_embed_dim)
     args.decoder_layers = getattr(args, 'decoder_layers', 2)
     args.decoder_out_embed_dim = getattr(args, 'decoder_out_embed_dim', 512)

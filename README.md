@@ -53,7 +53,6 @@ Training strategy (Attention):
 
     python -m image_captioning.train [DATA] \
         --task text_recognition --arch decoder_attention \
-        --decoder-embed-dim 384 --backbone densenet121 \
         --decoder-layers 2 --batch-size 16 --dropout 0.0 \
         --max-epoch 100 --criterion cross_entropy --num-workers 4 \
         --optimizer adam --adam-eps 1e-04 --lr 0.001 --min-lr 1e-09 \
@@ -63,9 +62,9 @@ Training strategy (Attention):
 Training strategy (Transformer):
 
     python -m image_captioning.train [DATA] \
-        --task image_captioning --arch decoder_transformer \
+        --task text_recognition --arch decoder_transformer \
         --batch-size 16 --dropout 0.0  --max-epoch 100 \
-        --backbone densenet121 --criterion cross_entropy \
+        --criterion cross_entropy \
         --num-workers 4 --optimizer adam --decoder-layers 2 \
         --adam-eps 1e-04 --lr 0.001 --min-lr 1e-09 \
         --adam-betas '(0.9, 0.98)' --clip-norm 0.0 \
@@ -87,8 +86,7 @@ Training strategy (CRNN):
 Use trained model to test (Attention):
 
     python -m image_captioning.generate [DATA] \
-        --arch decoder_attention --path [SAVE_DIR]/checkpoint_best.pt \
-        --decoder-embed-dim 384 --backbone densenet121 \
+        --arch decoder_attention --path [CHECKPOINTS_DIR] \
         --task text_recognition \
         --buffer-size 16 --num-workers 4 --gen-subset valid \
         --beam 5 --batch-size 16 --quiet
@@ -96,15 +94,15 @@ Use trained model to test (Attention):
 Use trained model to test (Transformer):
 
     python -m image_captioning.generate [DATA] \
-        --arch decoder_transformer --path [SAVE_DIR]/checkpoint_best.pt \
-        --task image_captioning \
+        --arch decoder_transformer --path [CHECKPOINTS_DIR] \
+        --task text_recognition \
         --buffer-size 16 --num-workers 4 --gen-subset valid \
         --batch-size 16 --beam 5 --quiet
 
 Use trained model to test (CRNN):
 
     python -m image_captioning.generate [DATA] \
-        --arch decoder_crnn --path [SAVE_DIR]/checkpoint_best.pt \
+        --arch decoder_crnn --path [CHECKPOINTS_DIR] \
         --task text_recognition --criterion ctc_loss \
         --sacrebleu \
         --buffer-size 16 --num-workers 4 --gen-subset valid \

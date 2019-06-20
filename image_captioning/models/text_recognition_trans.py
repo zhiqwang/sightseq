@@ -48,8 +48,8 @@ class TextRecognitionTransModel(FairseqEncoderDecoderModel):
                             help='dropout probability for attention weights')
         parser.add_argument('--activation-dropout', '--relu-dropout', type=float, metavar='D',
                             help='dropout probability after activation in FFN.')
-        parser.add_argument('--backbone', default='densenet_cifar',
-                            help='CNN backbone architecture. (default: densenet_cifar)')
+        parser.add_argument('--backbone', default='densenet121',
+                            help='CNN backbone architecture. (default: densenet121)')
         parser.add_argument('--pretrained', action='store_true', help='pretrained')
         parser.add_argument('--encoder-embed-dim', type=int, metavar='N',
                             help='encoder embedding dimension')
@@ -210,7 +210,7 @@ class TextRecognitionTransEncoder(TextRecognitionEncoder):
 
 @register_model_architecture('text_recognition_trans', 'text_recognition_trans')
 def base_architecture(args):
-    args.backbone = getattr(args, 'backbone', 'densenet_cifar')
+    args.backbone = getattr(args, 'backbone', 'densenet121')
     args.pretrained = getattr(args, 'pretrained', False)
     args.encoder_embed_dim = getattr(args, 'encoder_embed_dim', 512)
     args.encoder_ffn_embed_dim = getattr(args, 'encoder_ffn_embed_dim', 2048)
@@ -238,7 +238,7 @@ def base_architecture(args):
 
 @register_model_architecture('text_recognition_trans', 'decoder_transformer')
 def decoder_transformer(args):
-    args.encoder_embed_dim = getattr(args, 'encoder_embed_dim', 384)
+    args.encoder_embed_dim = getattr(args, 'encoder_embed_dim', 512)
     args.decoder_ffn_embed_dim = getattr(args, 'decoder_ffn_embed_dim', 1024)
     args.decoder_attention_heads = getattr(args, 'decoder_attention_heads', 4)
     args.no_token_rnn = getattr(args, 'no_token_rnn', True)
