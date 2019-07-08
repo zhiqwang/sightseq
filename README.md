@@ -20,7 +20,7 @@ Image captioning features
 
 * [PyTorch](http://pytorch.org/) (There is a [bug](https://github.com/pytorch/pytorch/pull/21244) in [nn.CTCLoss](https://pytorch.org/docs/master/nn.html#ctcloss) which is solved in nightly version)
 * Python version >= 3.6
-* [Fairseq](https://github.com/pytorch/fairseq) version >= 0.6.2
+* [Fairseq](https://github.com/pytorch/fairseq) version >= 0.7.1
 * For training new models, you'll also need an NVIDIA GPU and [NCCL](https://github.com/NVIDIA/nccl)
 
 ## Usage
