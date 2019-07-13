@@ -1,7 +1,6 @@
 #!/usr/bin/env python3 -u
 
 # Copyright (c) 2019-present, Zhiqiang Wang.
-# All rights reserved.
 # Modified from https://github.com/pytorch/fairseq
 
 # Copyright (c) 2017-present, Facebook, Inc.

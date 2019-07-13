@@ -1,11 +1,10 @@
 # Copyright (c) 2019-present, Zhiqiang Wang.
-# All rights reserved.
 
 import numpy as np
 import torch
 from fairseq.data import data_utils, FairseqDataset
 
-from image_captioning.data.data_utils import default_loader
+from sightseq.data.data_utils import default_loader
 
 
 def collate(

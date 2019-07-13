@@ -1,5 +1,4 @@
 # Copyright (c) 2019-present, Zhiqiang Wang.
-# All rights reserved.
 
 import torch
 from fairseq.data import Dictionary

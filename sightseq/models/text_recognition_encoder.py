@@ -1,5 +1,4 @@
 # Copyright (c) 2019-present, Zhiqiang Wang.
-# All rights reserved.
 
 import math
 
@@ -8,7 +7,7 @@ import torch.nn as nn
 
 from fairseq.models import FairseqEncoder
 
-import image_captioning.modules as modules
+import sightseq.modules as modules
 
 # pretrained features
 FEATURES = {}

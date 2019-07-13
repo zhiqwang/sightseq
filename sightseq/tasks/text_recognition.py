@@ -1,13 +1,12 @@
 # Copyright (c) 2019-present, Zhiqiang Wang.
-# All rights reserved.
 
 import os
 import torchvision.transforms as transforms
 
 from fairseq.tasks import FairseqTask, register_task
 from fairseq.data import Dictionary
-from image_captioning import tokenizer
-from image_captioning.data import CTCLossDictionary, TextRecognitionDataset
+from sightseq import tokenizer
+from sightseq.data import CTCLossDictionary, TextRecognitionDataset
 
 CHANNEL_MEAN = [0.396, 0.576, 0.562]
 CHANNEL_STD = [0.154, 0.128, 0.130]
@@ -130,7 +129,7 @@ class TextRecognitionTask(FairseqTask):
 
     def build_generator(self, args):
         if args.criterion == 'ctc_loss':
-            from image_captioning.ctc_loss_generator import CTCLossGenerator
+            from sightseq.ctc_loss_generator import CTCLossGenerator
             return CTCLossGenerator(self.target_dictionary)
         else:
             from fairseq.sequence_generator import SequenceGenerator

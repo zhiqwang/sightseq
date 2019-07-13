@@ -25,7 +25,7 @@ Image captioning features
 
 ## Usage
 
-- Navigate (`cd`) to the root of the toolbox `[YOUR_IMAGE_CAPTIONING_ROOT]`.
+- Navigate (`cd`) to the root of the toolbox `[YOUR_sightseq_ROOT]`.
 
 ## Annotation file format
 
@@ -43,7 +43,7 @@ For example, there is task identifying numbers of an image, the `Alphabet` is "0
 
 Generate `dict.txt` strategy:
 
-    python -m image_captioning.preprocess --task text_recognition \
+    python -m sightseq.preprocess --task text_recognition \
         --trainpref [DATA]/train.txt \
         --destdir [DATA] --padding-factor 1
 
@@ -51,7 +51,7 @@ Generate `dict.txt` strategy:
 
 Training strategy (Attention):
 
-    python -m image_captioning.train [DATA] \
+    python -m sightseq.train [DATA] \
         --task text_recognition --arch decoder_attention \
         --decoder-layers 2 --batch-size 16 --dropout 0.0 \
         --max-epoch 100 --criterion cross_entropy --num-workers 4 \
@@ -61,7 +61,7 @@ Training strategy (Attention):
 
 Training strategy (Transformer):
 
-    python -m image_captioning.train [DATA] \
+    python -m sightseq.train [DATA] \
         --task text_recognition --arch decoder_transformer \
         --batch-size 16 --dropout 0.0  --max-epoch 100 \
         --criterion cross_entropy \
@@ -73,7 +73,7 @@ Training strategy (Transformer):
 
 Training strategy (CRNN):
 
-    python -m image_captioning.train [DATA] \
+    python -m sightseq.train [DATA] \
         --task text_recognition --arch decoder_crnn \
         --decoder-layers 2 --batch-size 16 \
         --max-epoch 50 --criterion ctc_loss --num-workers 4 \
@@ -85,7 +85,7 @@ Training strategy (CRNN):
 
 Use trained model to test (Attention):
 
-    python -m image_captioning.generate [DATA] \
+    python -m sightseq.generate [DATA] \
         --arch decoder_attention --path [CHECKPOINTS_DIR] \
         --task text_recognition \
         --buffer-size 16 --num-workers 4 --gen-subset valid \
@@ -93,7 +93,7 @@ Use trained model to test (Attention):
 
 Use trained model to test (Transformer):
 
-    python -m image_captioning.generate [DATA] \
+    python -m sightseq.generate [DATA] \
         --arch decoder_transformer --path [CHECKPOINTS_DIR] \
         --task text_recognition \
         --buffer-size 16 --num-workers 4 --gen-subset valid \
@@ -101,7 +101,7 @@ Use trained model to test (Transformer):
 
 Use trained model to test (CRNN):
 
-    python -m image_captioning.generate [DATA] \
+    python -m sightseq.generate [DATA] \
         --arch decoder_crnn --path [CHECKPOINTS_DIR] \
         --task text_recognition --criterion ctc_loss \
         --sacrebleu \

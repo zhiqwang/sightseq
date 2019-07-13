@@ -1,5 +1,4 @@
 # Copyright (c) 2019-present, Zhiqiang Wang.
-# All rights reserved.
 # Modified from https://github.com/pytorch/vision
 
 from torch import nn

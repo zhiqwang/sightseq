@@ -1,13 +1,12 @@
 # Copyright (c) 2019-present, Zhiqiang Wang.
-# All rights reserved.
 
 import argparse
 import importlib
 import os
 
-from image_captioning.models.text_recognition_encoder import TextRecognitionEncoder
-from image_captioning.models.text_recognition_attn import TextRecognitionAttnModel
-from image_captioning.models.text_recognition_crnn import TextRecognitionCRNNModel
+from sightseq.models.text_recognition_encoder import TextRecognitionEncoder
+from sightseq.models.text_recognition_attn import TextRecognitionAttnModel
+from sightseq.models.text_recognition_crnn import TextRecognitionCRNNModel
 
 MODEL_REGISTRY = {}
 ARCH_MODEL_INV_REGISTRY = {}
@@ -24,7 +23,7 @@ __all__ = [
 for file in os.listdir(os.path.dirname(__file__)):
     if file.endswith('.py') and not file.startswith('_'):
         model_name = file[:file.find('.py')]
-        module = importlib.import_module('image_captioning.models.' + model_name)
+        module = importlib.import_module('sightseq.models.' + model_name)
 
         # extra `model_parser` for sphinx
         if model_name in MODEL_REGISTRY:

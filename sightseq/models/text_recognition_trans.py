@@ -1,18 +1,17 @@
 # Copyright (c) 2019-present, Zhiqiang Wang.
-# All rights reserved.
 
 from fairseq.models import (
     FairseqEncoderDecoderModel,
     register_model,
     register_model_architecture,
 )
-
 from fairseq import utils
 from fairseq.models.transformer import (
     Embedding,
     TransformerDecoder,
 )
-from image_captioning.models.text_recognition_encoder import TextRecognitionEncoder
+
+from sightseq.models.text_recognition_encoder import TextRecognitionEncoder
 
 DEFAULT_MAX_TARGET_POSITIONS = 1024
 
