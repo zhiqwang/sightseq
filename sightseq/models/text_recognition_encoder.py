@@ -7,10 +7,8 @@ import torch.nn as nn
 
 from fairseq.models import FairseqEncoder
 
-import sightseq.modules as modules
+from sightseq.modules.features_getter import ConvFeaturesGetter
 
-# pretrained features
-FEATURES = {}
 
 # output dimensionality for supported architectures
 OUTPUT_DIM = {
@@ -33,7 +31,7 @@ class TextRecognitionEncoder(FairseqEncoder):
     def __init__(self, args):
         super(FairseqEncoder, self).__init__()
         self.embed_dim = OUTPUT_DIM[args.backbone]
-        self.features = nn.Sequential(*self.cnn_layers(args.backbone, args.pretrained))
+        self.features = ConvFeaturesGetter(args.backbone, args.pretrained)
         self.avgpool = nn.AdaptiveAvgPool2d((1, None))
 
         self.embed_positions = PositionalEncoding(
@@ -112,37 +110,6 @@ class TextRecognitionEncoder(FairseqEncoder):
     def max_positions(self):
         """Maximum sequence length supported by the encoder."""
         return 128
-
-    @staticmethod
-    def cnn_layers(backbone, pretrained):
-        """CNN backbone for the CRNN Encoder."""
-
-        # loading network
-        if pretrained:
-            if backbone not in FEATURES:
-                # initialize with network pretrained on imagenet in pytorch
-                net_in = getattr(modules, backbone)(pretrained=True)
-            else:
-                # initialize with random weights, later on we will fill features with custom pretrained network
-                net_in = getattr(modules, backbone)(pretrained=False)
-        else:
-            # initialize with random weights
-            net_in = getattr(modules, backbone)(pretrained=False)
-
-        # initialize features
-        # take only convolutions for features,
-        # always ends with ReLU to make last activations non-negative
-        if backbone.startswith('resnet'):
-            features = list(net_in.children())[:-2]
-        elif backbone.startswith('densenet'):
-            features = list(net_in.features.children())
-            features.append(nn.ReLU(inplace=True))
-        elif backbone.startswith('mobilenetv2'):
-            features = list(net_in.children())[:-2]
-        else:
-            raise ValueError('Unsupported or unknown architecture: {}!'.format(backbone))
-
-        return features
 
 
 class PositionalEncoding(nn.Module):
