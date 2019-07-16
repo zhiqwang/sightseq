@@ -1,8 +1,8 @@
 #!/usr/bin/env python3 -u
-
+#
 # Copyright (c) 2019-present, Zhiqiang Wang.
 # Modified from https://github.com/pytorch/fairseq
-
+#
 # Copyright (c) 2017-present, Facebook, Inc.
 # All rights reserved.
 #
@@ -19,10 +19,12 @@ import random
 
 import torch
 
-from fairseq import checkpoint_utils, distributed_utils, options, progress_bar, tasks, utils
+from fairseq import distributed_utils, options, progress_bar, tasks, utils
 from fairseq.data import iterators
-from fairseq.trainer import Trainer
 from fairseq.meters import AverageMeter, StopwatchMeter
+
+from sightseq import checkpoint_utils
+from sightseq.trainer import Trainer
 
 
 def main(args, init_distributed=False):
@@ -43,10 +45,11 @@ def main(args, init_distributed=False):
 
     # Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args)
+    transform = task.build_transform(args)
 
     # Load valid dataset (we load training data below, based on the latest checkpoint)
     for valid_sub_split in args.valid_subset.split(','):
-        task.load_dataset(valid_sub_split, combine=True, epoch=0)
+        task.load_dataset(valid_sub_split, epoch=0, combine=False, transform=transform)
 
     # Build model and criterion
     model = task.build_model(args)
@@ -59,7 +62,7 @@ def main(args, init_distributed=False):
     ))
 
     # Build trainer
-    trainer = Trainer(args, task, model, criterion)
+    trainer = Trainer(args, task, model, criterion, transform)
     print('| training on {} GPUs'.format(args.distributed_world_size))
     print('| max tokens per GPU = {} and max sentences per GPU = {}'.format(
         args.max_tokens,
@@ -96,7 +99,7 @@ def main(args, init_distributed=False):
 
         if ':' in getattr(args, 'data', ''):
             # sharded data: get train iterator for next epoch
-            epoch_itr = trainer.get_train_iterator(epoch_itr.epoch)
+            epoch_itr = trainer.get_train_iterator(epoch=epoch_itr.epoch, transform=transform)
     train_meter.stop()
     print('| done training in {:.1f} seconds'.format(train_meter.sum))
 
@@ -201,7 +204,7 @@ def validate(args, trainer, task, epoch_itr, subsets):
         # Initialize data iterator
         itr = task.get_batch_iterator(
             dataset=task.dataset(subset),
-            max_tokens=args.max_tokens,
+            max_tokens=args.max_tokens_valid,
             max_sentences=args.max_sentences_valid,
             max_positions=utils.resolve_max_positions(
                 task.max_positions(),
@@ -241,7 +244,7 @@ def validate(args, trainer, task, epoch_itr, subsets):
             stats[k] = meter.avg
         progress.print(stats, tag=subset, step=trainer.get_num_updates())
 
-        valid_losses.append(stats['loss'].avg)
+        valid_losses.append(stats[args.best_checkpoint_metric].avg)
     return valid_losses
 
 

@@ -1,6 +1,6 @@
 # Copyright (c) 2019-present, Zhiqiang Wang.
 # Modified from https://github.com/pytorch/fairseq
-
+#
 # Copyright (c) 2017-present, Facebook, Inc.
 # All rights reserved.
 #

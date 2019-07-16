@@ -8,9 +8,6 @@ from fairseq.data import Dictionary
 from sightseq import tokenizer
 from sightseq.data import CTCLossDictionary, TextRecognitionDataset
 
-CHANNEL_MEAN = [0.396, 0.576, 0.562]
-CHANNEL_STD = [0.154, 0.128, 0.130]
-
 
 @register_task('text_recognition')
 class TextRecognitionTask(FairseqTask):
@@ -41,8 +38,6 @@ class TextRecognitionTask(FairseqTask):
     def __init__(self, args, tgt_dict):
         super().__init__(args)
         self.tgt_dict = tgt_dict
-        self.mean = CHANNEL_MEAN
-        self.std = CHANNEL_STD
 
     @classmethod
     def load_dictionary(cls, filename, use_ctc_loss):
@@ -88,7 +83,7 @@ class TextRecognitionTask(FairseqTask):
 
         return cls(args, tgt_dict)
 
-    def load_dataset(self, split, **kwargs):
+    def load_dataset(self, split, transform=None, **kwargs):
         """Load a given dataset split.
 
         Args:
@@ -110,14 +105,6 @@ class TextRecognitionTask(FairseqTask):
         assert len(image_names) == len(targets) == len(target_lengths)
         print('| {} {} {} images'.format(self.args.data, split, len(image_names)))
 
-        image_size = self.args.height if self.args.keep_ratio else (self.args.height, self.args.width)
-
-        transform = transforms.Compose([
-            transforms.Resize(image_size),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=self.mean, std=self.std),
-        ])
-
         shuffle = True if split == 'train' else False
         append_eos_to_target = False if self.args.criterion == 'ctc_loss' else True
         use_ctc_loss = True if self.args.criterion == 'ctc_loss' else False
@@ -126,6 +113,16 @@ class TextRecognitionTask(FairseqTask):
             shuffle=shuffle, transform=transform, use_ctc_loss=use_ctc_loss,
             input_feeding=True, append_eos_to_target=append_eos_to_target,
         )
+
+    def build_transform(self, args):
+        image_size = args.height if args.keep_ratio else (args.height, args.width)
+        transform = transforms.Compose([
+            transforms.Resize(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.396, 0.576, 0.562], std=[0.154, 0.128, 0.130]),
+        ])
+
+        return transform
 
     def build_generator(self, args):
         if args.criterion == 'ctc_loss':
