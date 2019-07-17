@@ -3,14 +3,16 @@
 import os
 import torchvision.transforms as transforms
 
-from fairseq.tasks import FairseqTask, register_task
+from fairseq.tasks import register_task
 from fairseq.data import Dictionary
+
+from sightseq.tasks.sightseq_task import SightseqTask
 from sightseq import tokenizer
 from sightseq.data import CTCLossDictionary, TextRecognitionDataset
 
 
 @register_task('text_recognition')
-class TextRecognitionTask(FairseqTask):
+class TextRecognitionTask(SightseqTask):
     """
     Train a text recognition model.
 
@@ -35,9 +37,10 @@ class TextRecognitionTask(FairseqTask):
                             help='training using pined memory')
         # fmt: on
 
-    def __init__(self, args, tgt_dict):
+    def __init__(self, args, tgt_dict, transform=None):
         super().__init__(args)
         self.tgt_dict = tgt_dict
+        self.transform = transform
 
     @classmethod
     def load_dictionary(cls, filename, use_ctc_loss):
@@ -71,6 +74,16 @@ class TextRecognitionTask(FairseqTask):
         return d
 
     @classmethod
+    def build_transform(cls, args):
+        image_size = args.height if args.keep_ratio else (args.height, args.width)
+        transform = transforms.Compose([
+            transforms.Resize(image_size),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.396, 0.576, 0.562], std=[0.154, 0.128, 0.130]),
+        ])
+        return transform
+
+    @classmethod
     def setup_task(cls, args, **kwargs):
         """Setup the task (e.g., load dictionaries).
 
@@ -81,9 +94,12 @@ class TextRecognitionTask(FairseqTask):
         tgt_dict = cls.load_dictionary(os.path.join(args.data, 'dict.txt'), use_ctc_loss)
         print('| target dictionary: {} types'.format(len(tgt_dict)))
 
-        return cls(args, tgt_dict)
+        # build transform
+        transform = cls.build_transform(args)
 
-    def load_dataset(self, split, transform=None, **kwargs):
+        return cls(args, tgt_dict, transform=transform)
+
+    def load_dataset(self, split, **kwargs):
         """Load a given dataset split.
 
         Args:
@@ -110,19 +126,9 @@ class TextRecognitionTask(FairseqTask):
         use_ctc_loss = True if self.args.criterion == 'ctc_loss' else False
         self.datasets[split] = TextRecognitionDataset(
             image_names, targets, self.tgt_dict, tgt_sizes=target_lengths,
-            shuffle=shuffle, transform=transform, use_ctc_loss=use_ctc_loss,
+            shuffle=shuffle, transform=self.transform, use_ctc_loss=use_ctc_loss,
             input_feeding=True, append_eos_to_target=append_eos_to_target,
         )
-
-    def build_transform(self, args):
-        image_size = args.height if args.keep_ratio else (args.height, args.width)
-        transform = transforms.Compose([
-            transforms.Resize(image_size),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.396, 0.576, 0.562], std=[0.154, 0.128, 0.130]),
-        ])
-
-        return transform
 
     def build_generator(self, args):
         if args.criterion == 'ctc_loss':

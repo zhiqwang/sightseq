@@ -19,12 +19,10 @@ import random
 
 import torch
 
-from fairseq import distributed_utils, options, progress_bar, tasks, utils
+from fairseq import checkpoint_utils, distributed_utils, options, progress_bar, tasks, utils
 from fairseq.data import iterators
+from fairseq.trainer import Trainer
 from fairseq.meters import AverageMeter, StopwatchMeter
-
-from sightseq import checkpoint_utils
-from sightseq.trainer import Trainer
 
 
 def main(args, init_distributed=False):
@@ -45,16 +43,15 @@ def main(args, init_distributed=False):
 
     # Setup task, e.g., translation, language modeling, etc.
     task = tasks.setup_task(args)
-    transform = task.build_transform(args)
 
     # Load valid dataset (we load training data below, based on the latest checkpoint)
     for valid_sub_split in args.valid_subset.split(','):
-        task.load_dataset(valid_sub_split, epoch=0, combine=False, transform=transform)
+        task.load_dataset(valid_sub_split, epoch=0, combine=False)
 
     # Build model and criterion
     model = task.build_model(args)
     criterion = task.build_criterion(args)
-    print(model)
+    # print(model)
     print('| model {}, criterion {}'.format(args.arch, criterion.__class__.__name__))
     print('| num. model params: {} (num. trained: {})'.format(
         sum(p.numel() for p in model.parameters()),
@@ -62,7 +59,7 @@ def main(args, init_distributed=False):
     ))
 
     # Build trainer
-    trainer = Trainer(args, task, model, criterion, transform)
+    trainer = Trainer(args, task, model, criterion)
     print('| training on {} GPUs'.format(args.distributed_world_size))
     print('| max tokens per GPU = {} and max sentences per GPU = {}'.format(
         args.max_tokens,
@@ -99,7 +96,7 @@ def main(args, init_distributed=False):
 
         if ':' in getattr(args, 'data', ''):
             # sharded data: get train iterator for next epoch
-            epoch_itr = trainer.get_train_iterator(epoch=epoch_itr.epoch, transform=transform)
+            epoch_itr = trainer.get_train_iterator(epoch=epoch_itr.epoch)
     train_meter.stop()
     print('| done training in {:.1f} seconds'.format(train_meter.sum))
 
