@@ -1,6 +1,6 @@
 # Introduction
 
-Now, Let's go sightseeing by vision and sequence language multimodal around the deep learning world. Sightseq provides reference implementations of various image captioning models, including:
+Now, Let's go **sight**seeing by vision and **seq**uence language multimodal around the deep learning world. Sightseq provides reference implementations of various image captioning models, including:
 - **Convolutional Recurrent Neural Network (CRNN)**
   - [Shi et al. (2015): An End-to-End Trainable Neural Network for Image-based Sequence Recognition and Its Application to Scene Text Recognition](https://arxiv.org/abs/1507.05717)
 - **Attention networks**

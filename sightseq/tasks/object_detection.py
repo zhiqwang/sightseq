@@ -2,16 +2,15 @@
 
 import os
 
-from fairseq.tasks import register_task
+from fairseq.tasks import FairseqTask, register_task
 
-from sightseq.tasks.sightseq_task import SightseqTask
 from sightseq.data import CocoDetectionDataset, CocoDictionary
 from sightseq.data.coco_utils import ConvertCocoPolysToMask
 import sightseq.data.transforms as T
 
 
 @register_task('object_detection')
-class ObjectDetectionTask(SightseqTask):
+class ObjectDetectionTask(FairseqTask):
     """
     Train a object detection model.
 

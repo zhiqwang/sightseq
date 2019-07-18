@@ -3,16 +3,15 @@
 import os
 import torchvision.transforms as transforms
 
-from fairseq.tasks import register_task
+from fairseq.tasks import FairseqTask, register_task
 from fairseq.data import Dictionary
 
-from sightseq.tasks.sightseq_task import SightseqTask
 from sightseq import tokenizer
 from sightseq.data import CTCLossDictionary, TextRecognitionDataset
 
 
 @register_task('text_recognition')
-class TextRecognitionTask(SightseqTask):
+class TextRecognitionTask(FairseqTask):
     """
     Train a text recognition model.
 
