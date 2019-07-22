@@ -6,7 +6,7 @@ Now, Let's go **sight**seeing by vision and **seq**uence language multimodal aro
 - **Attention networks**
 - **Transformer networks**
 
-Image captioning features
+Sightseq features:
 
 - All features of Fairseq
 - Flexible to enable convolution layer, recurrent layer in CRNN

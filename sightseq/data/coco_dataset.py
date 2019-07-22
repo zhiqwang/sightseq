@@ -2,11 +2,28 @@
 
 import os
 import numpy as np
-
+import torch
 from pycocotools.coco import COCO
 from fairseq.data import FairseqDataset
 
 from sightseq.data.data_utils import default_loader
+
+
+def collate(samples):
+    """collate samples of images and targets."""
+    if len(samples) == 0:
+        return {}
+
+    id = torch.LongTensor([s['id'] for s in samples])
+    images = [s['image'] for s in samples]
+    targets = [s['target'] for s in samples]
+
+    batch = {
+        'id': id,
+        'image': images,
+        'target': targets,
+    }
+    return batch
 
 
 class CocoDetectionDataset(FairseqDataset):
@@ -15,6 +32,7 @@ class CocoDetectionDataset(FairseqDataset):
         shuffle=True, transforms=None, loader=default_loader,
     ):
         self.image_root = image_root
+        print('| loading coco annotation file...')
         self.coco = COCO(annotation_file)
         self.image_ids = list(sorted(self.coco.imgs.keys()))
 
@@ -22,9 +40,6 @@ class CocoDetectionDataset(FairseqDataset):
         self.shuffle = shuffle
         self.transforms = transforms
         self.loader = loader
-
-    def __len__(self):
-        return len(self.image_ids)
 
     def __getitem__(self, index):
         """
@@ -47,13 +62,23 @@ class CocoDetectionDataset(FairseqDataset):
 
         return {
             'id': image_id,
-            'source': image,
+            'image': image,
             'target': target,
         }
 
+    def __len__(self):
+        return len(self.image_ids)
+
     def collater(self, samples):
-        """Merge a list of samples to form a mini-batch."""
-        pass
+        """Merge a list of samples to form a mini-batch.
+
+        Args:
+            samples (List[dict]): samples to collate
+
+        Returns:
+            dict: a mini-batch suitable for forwarding with a Model
+        """
+        return collate(samples)
 
     def ordered_indices(self):
         """
