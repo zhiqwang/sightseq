@@ -11,13 +11,14 @@ from sightseq.data.data_utils import default_loader
 
 class CocoDetectionDataset(FairseqDataset):
     def __init__(
-        self, image_root, annotation_file, shuffle=True,
-        transforms=None, loader=default_loader,
+        self, image_root, annotation_file, tgt_sizes=None,
+        shuffle=True, transforms=None, loader=default_loader,
     ):
         self.image_root = image_root
         self.coco = COCO(annotation_file)
         self.image_ids = list(sorted(self.coco.imgs.keys()))
 
+        self.tgt_sizes = tgt_sizes
         self.shuffle = shuffle
         self.transforms = transforms
         self.loader = loader
@@ -63,3 +64,8 @@ class CocoDetectionDataset(FairseqDataset):
             return np.random.permutation(len(self))
         else:
             return np.arange(len(self))
+
+    def num_tokens(self, index):
+        """Return the number of tokens in a sample. This value is used to
+        enforce ``--max-tokens`` during batching."""
+        return self.tgt_sizes[index] if self.tgt_sizes is not None else 0

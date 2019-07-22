@@ -27,23 +27,23 @@ class ObjectDetectionTask(FairseqTask):
 
     def __init__(
         self, args, transforms=None,
-        rpn_anchor_generator=None, box_roi_pool=None,
-        box_predictor=None, rpn_head=None, box_head=None,
+        rpn_anchor_generator=None, rpn_head=None,
+        box_roi_pool=None, box_predictor=None, box_head=None,
     ):
         super().__init__(args)
         self.transforms = transforms
         self.rpn_anchor_generator = rpn_anchor_generator
+        self.rpn_head = rpn_head
         self.box_roi_pool = box_roi_pool
         self.box_predictor = box_predictor
-        self.rpn_head = rpn_head
         self.box_head = box_head
 
     @classmethod
     def build_transforms(cls, args):
-        transforms = []
+        transforms = [ConvertCocoPolysToMask()]
         transforms.append(T.ToTensor())
 
-        return T.Compose(transforms)
+        return transforms
 
     @classmethod
     def setup_task(cls, args, **kwargs):
@@ -67,10 +67,7 @@ class ObjectDetectionTask(FairseqTask):
         image_root = os.path.join(self.args.data, '{}2017'.format(split))
         annotation_file = os.path.join(self.args.data, 'annotations', 'instances_{}2017.json'.format(split))
 
-        t = [ConvertCocoPolysToMask()]
-
-        if self.transforms is not None:
-            t.append(self.transforms)
+        t = self.transforms or []
         if split == 'train':
             t.append(T.RandomHorizontalFlip(0.5))
         transforms = T.Compose(t)
