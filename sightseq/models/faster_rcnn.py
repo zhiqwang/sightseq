@@ -6,12 +6,10 @@ import torch
 
 from torchvision.ops import MultiScaleRoIAlign
 
-from torchvision.models.detection.roi_heads import RoIHeads
 from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.models.detection.rpn import (
     AnchorGenerator,
     RPNHead,
-    RegionProposalNetwork,
 )
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor, TwoMLPHead
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
@@ -22,10 +20,18 @@ from fairseq.models import (
     register_model_architecture,
 )
 
+from sightseq.modules import RPN, RegionOfInterestHeads
+
 
 @register_model('faster_rcnn')
 class FasterRCNN(BaseFairseqModel):
     """
+    Faster RCNN from `"Faster RCNN: Towards Real-Time Object Detection
+    with Region Proposal Networks" (Ren, et al, 2015)
+    <https://arxiv.org/abs/1506.01497>`_.
+
+    Adopted from the torchvision implementation.
+
     Arguments:
         backbone (nn.Module):
         rpn (nn.Module):
@@ -34,7 +40,7 @@ class FasterRCNN(BaseFairseqModel):
         transform (nn.Module): performs the data transformation from
             the inputs to feed into the model
 
-    Faster RCNN model provides the following named architectures and
+    Faster RCNN provides the following named architectures and
     command-line arguments:
 
     .. argparse::
@@ -184,7 +190,7 @@ class FasterRCNN(BaseFairseqModel):
         rpn_pre_nms_top_n = dict(training=args.rpn_pre_nms_top_n_train, testing=args.rpn_pre_nms_top_n_test)
         rpn_post_nms_top_n = dict(training=args.rpn_post_nms_top_n_train, testing=args.rpn_post_nms_top_n_test)
 
-        rpn = RegionProposalNetwork(
+        rpn = RPN(
             rpn_anchor_generator, rpn_head,
             args.rpn_fg_iou_thresh, args.rpn_bg_iou_thresh,
             args.rpn_batch_size_per_image, args.rpn_positive_fraction,
@@ -213,7 +219,7 @@ class FasterRCNN(BaseFairseqModel):
                 args.num_classes,
             )
 
-        roi_heads = RoIHeads(
+        roi_heads = RegionOfInterestHeads(
             # Box
             box_roi_pool, box_head, box_predictor,
             args.box_fg_iou_thresh, args.box_bg_iou_thresh,

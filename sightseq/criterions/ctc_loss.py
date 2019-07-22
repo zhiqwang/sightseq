@@ -7,7 +7,7 @@ from fairseq.criterions import FairseqCriterion, register_criterion
 
 
 @register_criterion('ctc_loss')
-class CTCLossCriterion(FairseqCriterion):
+class CTCLoss(FairseqCriterion):
 
     def __init__(self, args, task):
         super(FairseqCriterion, self).__init__()

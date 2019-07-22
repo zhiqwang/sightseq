@@ -5,16 +5,12 @@ import importlib
 import os
 
 from sightseq.models.text_recognition_encoder import TextRecognitionEncoder
-from sightseq.models.text_recognition_attn import TextRecognitionAttnModel
-from sightseq.models.text_recognition_crnn import TextRecognitionCRNNModel
 
 MODEL_REGISTRY = {}
 ARCH_MODEL_INV_REGISTRY = {}
 
 
 __all__ = [
-    'TextRecognitionAttnModel',
-    'TextRecognitionCRNNModel',
     'TextRecognitionEncoder',
 ]
 

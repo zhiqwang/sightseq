@@ -10,10 +10,6 @@ from collections import OrderedDict
 from torchvision.models.utils import load_state_dict_from_url
 
 
-__all__ = [
-    'DenseNet', 'densenet_cifar', 'densenet121', 'densenet161', 'densenet169', 'densenet201',
-]
-
 model_urls = {}
 
 

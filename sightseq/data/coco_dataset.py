@@ -11,13 +11,14 @@ from sightseq.data.data_utils import default_loader
 
 class CocoDetectionDataset(FairseqDataset):
     def __init__(
-        self, image_root, annotation_file,
+        self, image_root, annotation_file, shuffle=True,
         transforms=None, loader=default_loader,
     ):
         self.image_root = image_root
         self.coco = COCO(annotation_file)
         self.image_ids = list(sorted(self.coco.imgs.keys()))
 
+        self.shuffle = shuffle
         self.transforms = transforms
         self.loader = loader
 
