@@ -17,9 +17,12 @@ def collate(samples):
     id = torch.LongTensor([s['id'] for s in samples])
     images = [s['image'] for s in samples]
     targets = [s['target'] for s in samples]
+    ntokens = sum(len(t['labels']) for t in targets)
 
     batch = {
         'id': id,
+        'nsentences': len(samples),
+        'ntokens': ntokens,
         'image': images,
         'target': targets,
     }

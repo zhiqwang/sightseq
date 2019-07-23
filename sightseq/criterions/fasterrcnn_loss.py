@@ -20,6 +20,19 @@ class FasterRCNNLoss(FairseqCriterion):
         3) logging outputs to display while training
         """
         net_output = model(sample['image'], sample['target'])
+        losses = self.compute_loss(model, net_output, sample)
+        loss = sum(l for l in losses.values())
+        sample_size = sample['nsentences'] if self.args.sentence_avg else sample['ntokens']
+        logging_output = {
+            'loss': loss.item(),
+            'ntokens': sample['ntokens'],
+            'nsentences': sample['nsentences'],
+            'sample_size': sample_size,
+        }
+        return loss, sample_size, logging_output
+
+    def compute_loss(self, model, net_output, sample):
+        # get rpn proposals and box detections
         rpn_proposals = model.get_rpn_proposals(net_output)
         box_detections = model.get_box_detections(net_output)
 
