@@ -1,7 +1,7 @@
 # Copyright (c) 2019-present, Zhiqiang Wang.
 
 import torch
-from torchvision.models.detection.roi_heads import RoIHeads, fastrcnn_loss
+from torchvision.models.detection.roi_heads import RoIHeads
 
 
 class RegionOfInterestHeads(RoIHeads):
@@ -42,26 +42,37 @@ class RegionOfInterestHeads(RoIHeads):
 
         if self.training:
             proposals, matched_idxs, labels, regression_targets = self.select_training_samples(proposals, targets)
+        else:
+            matched_idxs, labels, regression_targets = None, None, None
 
         box_features = self.box_roi_pool(features, proposals, image_shapes)
         box_features = self.box_head(box_features)
         class_logits, box_regression = self.box_predictor(box_features)
 
-        result, losses = [], {}
-        if self.training:
-            loss_classifier, loss_box_reg = fastrcnn_loss(
-                class_logits, box_regression, labels, regression_targets)
-            losses = dict(loss_classifier=loss_classifier, loss_box_reg=loss_box_reg)
-        else:
-            boxes, scores, labels = self.postprocess_detections(class_logits, box_regression, proposals, image_shapes)
-            num_images = len(boxes)
-            for i in range(num_images):
-                result.append(
-                    dict(
-                        boxes=boxes[i],
-                        labels=labels[i],
-                        scores=scores[i],
-                    )
-                )
+        return {
+            'matched_idxs': matched_idxs,
+            'labels': labels,
+            'regression_targets': regression_targets,
+            'class_logits': class_logits,
+            'box_regression': box_regression,
+        }
 
-        return result, losses
+    def get_matched_idxs(self, net_output):
+        matched_idxs = net_output['matched_idxs']
+        return matched_idxs
+
+    def get_labels(self, net_output):
+        labels = net_output['labels']
+        return labels
+
+    def get_regression_targets(self, net_output):
+        regression_targets = net_output['regression_targets']
+        return regression_targets
+
+    def get_class_logits(self, net_output):
+        class_logits = net_output['class_logits']
+        return class_logits
+
+    def get_box_regression(self, net_output):
+        box_regression = net_output['box_regression']
+        return box_regression

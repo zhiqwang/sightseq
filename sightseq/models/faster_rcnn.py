@@ -259,18 +259,23 @@ class FasterRCNN(BaseFairseqModel):
         features = self.backbone(images.tensors)
         if isinstance(features, torch.Tensor):
             features = OrderedDict([(0, features)])
-        proposals, proposal_losses = self.rpn(images, features, targets)
-        detections, detector_losses = self.roi_heads(features, proposals, images.image_sizes, targets)
+        rpn_proposals = self.rpn(images, features, targets)
+        boxes = self.rpn.get_boxes(rpn_proposals)
+        detections = self.roi_heads(features, boxes, images.image_sizes, targets)
         detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
 
-        losses = {}
-        losses.update(detector_losses)
-        losses.update(proposal_losses)
+        return {
+            'rpn_proposals': rpn_proposals,
+            'box_detections': detections,
+        }
 
-        if self.training:
-            return losses
+    def get_rpn_proposals(self, net_output):
+        rpn_proposals = net_output['rpn_proposals']
+        return rpn_proposals
 
-        return detections
+    def get_box_detections(self, net_output):
+        box_detections = net_output['box_detections']
+        return box_detections
 
 
 @register_model_architecture('faster_rcnn', 'faster_rcnn')

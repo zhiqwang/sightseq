@@ -77,14 +77,30 @@ class RPN(RegionProposalNetwork):
         proposals = proposals.view(num_images, -1, 4)
         boxes, scores = self.filter_proposals(proposals, objectness, images.image_sizes, num_anchors_per_level)
 
-        losses = {}
-        if self.training:
-            labels, matched_gt_boxes = self.assign_targets_to_anchors(anchors, targets)
-            regression_targets = self.box_coder.encode(matched_gt_boxes, anchors)
-            loss_objectness, loss_rpn_box_reg = self.compute_loss(
-                objectness, pred_bbox_deltas, labels, regression_targets)
-            losses = {
-                "loss_objectness": loss_objectness,
-                "loss_rpn_box_reg": loss_rpn_box_reg,
-            }
-        return boxes, losses
+        return {
+            'anchors': anchors,
+            'objectness': objectness,
+            'pred_bbox_deltas': pred_bbox_deltas,
+            'boxes': boxes,
+            'scores': scores,
+        }
+
+    def get_anchors(self, net_output):
+        anchors = net_output['anchors']
+        return anchors
+
+    def get_objectness(self, net_output):
+        objectness = net_output['objectness']
+        return objectness
+
+    def get_pred_bbox_deltas(self, net_output):
+        pred_bbox_deltas = net_output['pred_bbox_deltas']
+        return pred_bbox_deltas
+
+    def get_boxes(self, net_output):
+        boxes = net_output['boxes']
+        return boxes
+
+    def get_scores(self, net_output):
+        scores = net_output['scores']
+        return scores
