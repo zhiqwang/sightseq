@@ -9,6 +9,7 @@ from .resnet import resnet18, resnet34, resnet50, resnet101, resnet152
 from .mobilenet import mobilenet_v2
 from .roi_heads import RegionOfInterestHeads
 from .rpn import RPN
+from .transform import GeneralRCNNTransform
 
 __all__ = [
     densenet121,
@@ -24,4 +25,5 @@ __all__ = [
     resnet152,
     RegionOfInterestHeads,
     RPN,
+    GeneralRCNNTransform,
 ]

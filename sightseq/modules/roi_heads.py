@@ -15,6 +15,8 @@ class RegionOfInterestHeads(RoIHeads):
         # Mask
         mask_roi_pool=None, mask_head=None, mask_predictor=None,
         keypoint_roi_pool=None, keypoint_head=None, keypoint_predictor=None,
+        # Training switch
+        train_process=True,
     ):
         super().__init__(
             box_roi_pool, box_head, box_predictor,
@@ -24,6 +26,7 @@ class RegionOfInterestHeads(RoIHeads):
             mask_roi_pool, mask_head, mask_predictor,
             keypoint_roi_pool, keypoint_head, keypoint_predictor,
         )
+        self.train_process = train_process
 
     def forward(self, features, proposals, image_shapes, targets=None):
         """
@@ -40,39 +43,51 @@ class RegionOfInterestHeads(RoIHeads):
                 if self.has_keypoint:
                     assert t["keypoints"].dtype == torch.float32, 'target keypoints must of float type'
 
-        if self.training:
+        if self.train_process:
             proposals, matched_idxs, labels, regression_targets = self.select_training_samples(proposals, targets)
-        else:
-            matched_idxs, labels, regression_targets = None, None, None
 
         box_features = self.box_roi_pool(features, proposals, image_shapes)
         box_features = self.box_head(box_features)
         class_logits, box_regression = self.box_predictor(box_features)
 
+        if not self.train_process:
+            boxes, scores, labels = self.postprocess_detections(class_logits, box_regression, proposals, image_shapes)
+
         return {
-            'matched_idxs': matched_idxs,
             'labels': labels,
-            'regression_targets': regression_targets,
+            'regression_targets': regression_targets if self.train_process else None,
             'class_logits': class_logits,
             'box_regression': box_regression,
+            'boxes': boxes if not self.train_process else None,
+            'scores': scores if not self.train_process else None,
         }
 
-    def get_matched_idxs(self, net_output):
-        matched_idxs = net_output['matched_idxs']
-        return matched_idxs
-
-    def get_labels(self, net_output):
+    @staticmethod
+    def get_labels(net_output):
         labels = net_output['labels']
         return labels
 
-    def get_regression_targets(self, net_output):
+    @staticmethod
+    def get_regression_targets(net_output):
         regression_targets = net_output['regression_targets']
         return regression_targets
 
-    def get_class_logits(self, net_output):
+    @staticmethod
+    def get_class_logits(net_output):
         class_logits = net_output['class_logits']
         return class_logits
 
-    def get_box_regression(self, net_output):
+    @staticmethod
+    def get_box_regression(net_output):
         box_regression = net_output['box_regression']
         return box_regression
+
+    @staticmethod
+    def get_boxes(net_output):
+        boxes = net_output['boxes']
+        return boxes
+
+    @staticmethod
+    def get_scores(net_output):
+        scores = net_output['scores']
+        return scores

@@ -85,22 +85,27 @@ class RPN(RegionProposalNetwork):
             'scores': scores,
         }
 
-    def get_anchors(self, net_output):
+    @staticmethod
+    def get_anchors(net_output):
         anchors = net_output['anchors']
         return anchors
 
-    def get_objectness(self, net_output):
+    @staticmethod
+    def get_objectness(net_output):
         objectness = net_output['objectness']
         return objectness
 
-    def get_pred_bbox_deltas(self, net_output):
+    @staticmethod
+    def get_pred_bbox_deltas(net_output):
         pred_bbox_deltas = net_output['pred_bbox_deltas']
         return pred_bbox_deltas
 
-    def get_boxes(self, net_output):
+    @staticmethod
+    def get_boxes(net_output):
         boxes = net_output['boxes']
         return boxes
 
-    def get_scores(self, net_output):
+    @staticmethod
+    def get_scores(net_output):
         scores = net_output['scores']
         return scores
