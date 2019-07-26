@@ -15,8 +15,6 @@ class RegionOfInterestHeads(RoIHeads):
         # Mask
         mask_roi_pool=None, mask_head=None, mask_predictor=None,
         keypoint_roi_pool=None, keypoint_head=None, keypoint_predictor=None,
-        # Training switch
-        train_process=True,
     ):
         super().__init__(
             box_roi_pool, box_head, box_predictor,
@@ -26,7 +24,6 @@ class RegionOfInterestHeads(RoIHeads):
             mask_roi_pool, mask_head, mask_predictor,
             keypoint_roi_pool, keypoint_head, keypoint_predictor,
         )
-        self.train_process = train_process
 
     def forward(self, features, proposals, image_shapes, targets=None):
         """
@@ -43,23 +40,23 @@ class RegionOfInterestHeads(RoIHeads):
                 if self.has_keypoint:
                     assert t["keypoints"].dtype == torch.float32, 'target keypoints must of float type'
 
-        if self.train_process:
+        if self.training:
             proposals, matched_idxs, labels, regression_targets = self.select_training_samples(proposals, targets)
 
         box_features = self.box_roi_pool(features, proposals, image_shapes)
         box_features = self.box_head(box_features)
         class_logits, box_regression = self.box_predictor(box_features)
 
-        if not self.train_process:
+        if not self.training:
             boxes, scores, labels = self.postprocess_detections(class_logits, box_regression, proposals, image_shapes)
 
         return {
             'labels': labels,
-            'regression_targets': regression_targets if self.train_process else None,
+            'regression_targets': regression_targets if self.training else None,
             'class_logits': class_logits,
             'box_regression': box_regression,
-            'boxes': boxes if not self.train_process else None,
-            'scores': scores if not self.train_process else None,
+            'boxes': boxes if not self.training else None,
+            'scores': scores if not self.training else None,
         }
 
     @staticmethod

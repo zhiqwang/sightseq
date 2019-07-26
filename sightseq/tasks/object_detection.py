@@ -1,6 +1,7 @@
 # Copyright (c) 2019-present, Zhiqiang Wang.
 
 import os
+import torch
 
 from fairseq.tasks import FairseqTask, register_task
 
@@ -76,3 +77,9 @@ class ObjectDetectionTask(FairseqTask):
 
         # if split == 'train':
         #     self.dataset[split].remove_images_without_annotations()
+
+    def valid_step(self, sample, model, criterion):
+        model.train()
+        with torch.no_grad():
+            loss, sample_size, logging_output = criterion(model, sample)
+        return loss, sample_size, logging_output

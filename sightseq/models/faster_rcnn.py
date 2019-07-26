@@ -11,6 +11,7 @@ from torchvision.models.detection.rpn import (
     RPNHead,
 )
 from torchvision.models.detection.faster_rcnn import FastRCNNPredictor, TwoMLPHead
+from torchvision.models.detection.transform import GeneralizedRCNNTransform
 from torchvision.models.detection.backbone_utils import resnet_fpn_backbone
 
 from fairseq.models import (
@@ -19,7 +20,7 @@ from fairseq.models import (
     register_model_architecture,
 )
 
-from sightseq.modules import RPN, RegionOfInterestHeads, GeneralRCNNTransform
+from sightseq.modules import RPN, RegionOfInterestHeads
 
 
 @register_model('faster_rcnn')
@@ -67,8 +68,6 @@ class FasterRCNN(BaseFairseqModel):
         parser.add_argument('--backbone', default='resnet50',
                             help='CNN backbone architecture. (default: resnet50)')
         parser.add_argument('--pretrained', action='store_true', help='pretrained')
-        parser.add_argument('--train-process', action='store_true',
-                            help='training process in roi heads')
         # transform parameters
         parser.add_argument('--num-classes', type=int, metavar='N',
                             help='number of output classes of the'
@@ -227,17 +226,15 @@ class FasterRCNN(BaseFairseqModel):
             args.box_batch_size_per_image, args.box_positive_fraction,
             args.bbox_reg_weights, args.box_score_thresh,
             args.box_nms_thresh, args.box_detections_per_img,
-            train_process=args.train_process,
         )
 
         if args.image_mean is None:
             args.image_mean = [0.485, 0.456, 0.406]
         if args.image_std is None:
             args.image_std = [0.229, 0.224, 0.225]
-        transform = GeneralRCNNTransform(
+        transform = GeneralizedRCNNTransform(
             args.min_size, args.max_size,
             args.image_mean, args.image_std,
-            train_process=args.train_process,
         )
 
         return FasterRCNN(backbone, rpn, roi_heads, transform)
@@ -285,7 +282,6 @@ class FasterRCNN(BaseFairseqModel):
 def base_architecture(args):
     args.backbone = getattr(args, 'backbone', 'resnet50')
     args.pretrained = getattr(args, 'pretrained', False)
-    args.train_process = getattr(args, 'train_process', False)
     args.num_classes = getattr(args, 'num_classes', None)
     args.min_size = getattr(args, 'min_size', 800)
     args.max_size = getattr(args, 'max_size', 1333)
@@ -313,12 +309,4 @@ def base_architecture(args):
 @register_model_architecture('faster_rcnn', 'fasterrcnn_resnet50_fpn')
 def fasterrcnn_resnet50_fpn(args):
     args.backbone = getattr(args, 'backbone', 'resnet50')
-    args.train_process = getattr(args, 'train_process', True)
-    base_architecture(args)
-
-
-@register_model_architecture('faster_rcnn', 'fasterrcnn_resnet50_fpn_test')
-def fasterrcnn_resnet50_fpn_test(args):
-    args.backbone = getattr(args, 'backbone', 'resnet50')
-    args.train_process = getattr(args, 'train_process', False)
     base_architecture(args)
