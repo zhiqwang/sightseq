@@ -85,7 +85,7 @@ Training strategy (CRNN):
 
 Use trained model to test (Attention):
 
-    python -m sightseq.generate [DATA] \
+    python -m sightseq.generate_ocr [DATA] \
         --arch decoder_attention --path [CHECKPOINTS_DIR] \
         --task text_recognition \
         --buffer-size 16 --num-workers 4 --gen-subset valid \
@@ -93,7 +93,7 @@ Use trained model to test (Attention):
 
 Use trained model to test (Transformer):
 
-    python -m sightseq.generate [DATA] \
+    python -m sightseq.generate_ocr [DATA] \
         --arch decoder_transformer --path [CHECKPOINTS_DIR] \
         --task text_recognition \
         --buffer-size 16 --num-workers 4 --gen-subset valid \
@@ -101,7 +101,7 @@ Use trained model to test (Transformer):
 
 Use trained model to test (CRNN):
 
-    python -m sightseq.generate [DATA] \
+    python -m sightseq.generate_ocr [DATA] \
         --arch decoder_crnn --path [CHECKPOINTS_DIR] \
         --task text_recognition --criterion ctc_loss \
         --sacrebleu \
