@@ -157,7 +157,7 @@ class TextRecognitionTask(FairseqTask):
     def max_positions(self):
         """Return the max input length allowed by the task."""
         # The source should be less than *args.max_positions* and
-        # In order to use `CuDNN`, the "target" has max length 256,
+        # For CTC Loss, in order to use `CuDNN`, the "target" has max length 256,
         return (self.args.max_positions, 256)
 
     @property

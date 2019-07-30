@@ -47,16 +47,25 @@ class RegionOfInterestHeads(RoIHeads):
         box_features = self.box_head(box_features)
         class_logits, box_regression = self.box_predictor(box_features)
 
+        hypos = []
         if not self.training:
-            boxes, scores, labels = self.postprocess_detections(class_logits, box_regression, proposals, image_shapes)
+            boxes, scores, labels = self.postprocess_detections(
+                class_logits, box_regression, proposals, image_shapes,
+            )
+            num_images = len(boxes)
+            for i in range(num_images):
+                hypos.append(dict(
+                    boxes=boxes[i],
+                    labels=labels[i],
+                    scores=scores[i],
+                ))
 
         return {
             'labels': labels,
             'regression_targets': regression_targets if self.training else None,
             'class_logits': class_logits,
             'box_regression': box_regression,
-            'boxes': boxes if not self.training else None,
-            'scores': scores if not self.training else None,
+            'hypos': hypos,
         }
 
     @staticmethod
@@ -80,11 +89,6 @@ class RegionOfInterestHeads(RoIHeads):
         return box_regression
 
     @staticmethod
-    def get_boxes(net_output):
-        boxes = net_output['boxes']
-        return boxes
-
-    @staticmethod
-    def get_scores(net_output):
-        scores = net_output['scores']
-        return scores
+    def get_hypos(net_output):
+        hypos = net_output['hypos']
+        return hypos

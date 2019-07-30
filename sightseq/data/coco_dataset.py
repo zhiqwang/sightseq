@@ -31,7 +31,7 @@ def collate(samples):
 
 class CocoDetectionDataset(FairseqDataset):
     def __init__(
-        self, image_root, annotation_file, tgt_sizes=None,
+        self, image_root, annotation_file,
         shuffle=True, transforms=None, loader=default_loader,
     ):
         self.image_root = image_root
@@ -39,7 +39,6 @@ class CocoDetectionDataset(FairseqDataset):
         self.coco = COCO(annotation_file)
         self.image_ids = list(sorted(self.coco.imgs.keys()))
 
-        self.tgt_sizes = tgt_sizes
         self.shuffle = shuffle
         self.transforms = transforms
         self.loader = loader
@@ -62,11 +61,13 @@ class CocoDetectionDataset(FairseqDataset):
         image = self.loader(os.path.join(self.image_root, path))
         if self.transforms is not None:
             image, target = self.transforms(image, target)
+        tgt_length = len(target['labels'])
 
         return {
             'id': image_id,
             'image': image,
             'target': target,
+            'target_length': tgt_length,
         }
 
     def __len__(self):
@@ -96,4 +97,9 @@ class CocoDetectionDataset(FairseqDataset):
     def num_tokens(self, index):
         """Return the number of tokens in a sample. This value is used to
         enforce ``--max-tokens`` during batching."""
-        return self.tgt_sizes[index] if self.tgt_sizes is not None else 0
+        return self[index]['target_length']
+
+    def size(self, index):
+        """Return an example's size as a float or tuple. This value is used when
+        filtering a dataset with ``--max-positions``."""
+        return self[index]['target_length']

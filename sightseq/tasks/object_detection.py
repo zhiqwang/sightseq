@@ -24,6 +24,8 @@ class ObjectDetectionTask(FairseqTask):
         """Add task-specific arguments to the parser."""
         # fmt: off
         parser.add_argument('data', help='path to data directory')
+        parser.add_argument('--max-positions', default=2048, type=int,
+                            help='max input length')
         # fmt: on
 
     def __init__(
@@ -83,3 +85,12 @@ class ObjectDetectionTask(FairseqTask):
         with torch.no_grad():
             loss, sample_size, logging_output = criterion(model, sample)
         return loss, sample_size, logging_output
+
+    def build_generator(self, args):
+        from sightseq.coco_generator import ObjectDetectionGenerator
+        return ObjectDetectionGenerator()
+
+    def max_positions(self):
+        """Return the max input length allowed by the task."""
+        # The source should be less than *args.max_positions*
+        return self.args.max_positions

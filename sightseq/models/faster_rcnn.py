@@ -262,20 +262,32 @@ class FasterRCNN(BaseFairseqModel):
         rpn_proposals = self.rpn(images, features, targets)
         boxes = self.rpn.get_boxes(rpn_proposals)
         detections = self.roi_heads(features, boxes, images.image_sizes, targets)
-        detections = self.transform.postprocess(detections, images.image_sizes, original_image_sizes)
+
+        # post process when not training
+        if not self.training:
+            roi_heads_hypos = self.roi_heads.get_hypos(detections)
+            detections = self.transform.postprocess(
+                roi_heads_hypos, images.image_sizes, original_image_sizes,
+            )
 
         return {
             'rpn_proposals': rpn_proposals,
             'box_detections': detections,
         }
 
-    def get_rpn_proposals(self, net_output):
+    @staticmethod
+    def get_rpn_proposals(net_output):
         rpn_proposals = net_output['rpn_proposals']
         return rpn_proposals
 
-    def get_box_detections(self, net_output):
+    @staticmethod
+    def get_box_detections(net_output):
         box_detections = net_output['box_detections']
         return box_detections
+
+    def max_positions(self):
+        """Maximum length supported by the model."""
+        return 1e6  # an arbitrary large number
 
 
 @register_model_architecture('faster_rcnn', 'faster_rcnn')
