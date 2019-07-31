@@ -29,7 +29,7 @@ sightseq provides reference implementations of various deep learning tasks, incl
 
 # Pre-trained models and examples
 - [text recognition](examples/text_recognition)
-- [object detection](exmaples/object_detection)
+- [object detection](examples/object_detection)
 
 # License
 sightseq is Apache-2.0 licensed.
