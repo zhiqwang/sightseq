@@ -1,1 +1,0 @@
-# Image Captioning Attention Models
