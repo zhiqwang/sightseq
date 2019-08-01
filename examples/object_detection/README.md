@@ -12,10 +12,10 @@ I port the torchvision's fasterrcnn_resnet50_fpn weights to sightseq. The result
 - torchvision >= 0.3.0
 - cocoapi
 
-cocoapi step-by-step installation
+cocoapi step-by-step installation:
 ```shell
 # install pycocotools
-cd $INSTALL_DIR
+# cd $INSTALL_DIR
 git clone https://github.com/cocodataset/cocoapi.git
 cd cocoapi/PythonAPI
 python setup.py build_ext install
@@ -43,17 +43,23 @@ sightseq
 ```
 python -m sightseq.train [DATA] \
     --task object_detection \
+    --num-classes 91 \
     --arch fasterrcnn_resnet50_fpn \
     --criterion fasterrcnn_loss \
-    --optimizer sgd --lr 0.02 \
-    --batch-size 2 --valid-subset val \
-    --max-epoch 24 --no-progress-bar
+    --optimizer sgd \
+    --lr 0.02 --momentum 0.9 --weight-decay 1e-4 \
+    --batch-size 2 \
+    --valid-subset val \
+    --max-epoch 26 \
+    --aspect-ratio-group-factor 3 \
+    --no-progress-bar
 ```
 
 ## Testing
 ```
 python -m sightseq.generate_coco [DATA] \
     --task object_detection \
-    --batch-size 2 --gen-subset val \
-    --path checkpoints/checkpoint_last.pt 
+    --criterion fasterrcnn_loss \
+    --batch-size 1 --gen-subset val \
+    --path [CHECKPOINTS_PATH]
 ```

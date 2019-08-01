@@ -4,4 +4,4 @@ import sightseq.criterions
 import sightseq.models
 import sightseq.modules
 import sightseq.tasks
-import sightseq.data
+import sightseq.data  # noqa

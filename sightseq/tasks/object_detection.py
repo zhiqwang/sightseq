@@ -26,6 +26,7 @@ class ObjectDetectionTask(FairseqTask):
         parser.add_argument('data', help='path to data directory')
         parser.add_argument('--max-positions', default=2048, type=int,
                             help='max input length')
+        parser.add_argument('--aspect-ratio-group-factor', default=0, type=int)
         # fmt: on
 
     def __init__(
