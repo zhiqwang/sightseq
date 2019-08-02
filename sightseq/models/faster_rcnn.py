@@ -50,7 +50,7 @@ class FasterRCNN(BaseFairseqModel):
     @classmethod
     def hub_models(cls):
         return {
-            'fasterrcnn.resnet50.fpn.coco':
+            'fasterrcnn_resnet50_fpn':
                 'https://download.pytorch.org/models/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth',
         }
 
@@ -79,9 +79,9 @@ class FasterRCNN(BaseFairseqModel):
         parser.add_argument('--max-size', type=int, metavar='N',
                             help='maximum size of the image to be rescaled'
                                  ' before feeding it to the backbone')
-        parser.add_argument('--image-mean', type=tuple,
+        parser.add_argument('--image-mean', type=float, nargs='+', metavar='D',
                             help='mean values used for input normalization')
-        parser.add_argument('--image-std', type=tuple,
+        parser.add_argument('--image-std', type=float, nargs='+', metavar='D',
                             help='std values used for input normalization')
         # RPN parameters
         parser.add_argument('--rpn-pre-nms-top-n-train', type=int, metavar='N',
