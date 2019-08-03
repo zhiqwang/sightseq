@@ -7,10 +7,6 @@ Recognize pre-processed image with a trained model.
 """
 
 import torch
-try:
-    from torch.hub import load_state_dict_from_url
-except ImportError:
-    from torch.utils.model_zoo import load_url as load_state_dict_from_url
 
 from fairseq import options, tasks, progress_bar, utils
 from fairseq.meters import StopwatchMeter, TimeMeter
@@ -20,6 +16,7 @@ from sightseq.coco_eval import CocoEvaluator
 
 def main(args):
     utils.import_user_module(args)
+    assert args.pretrained is True, '--pretrained required for eval!'
 
     print(args)
 
@@ -31,16 +28,8 @@ def main(args):
 
     # Build model and criterion
     model = task.build_model(args)
-
-    model_path = model.hub_models()[args.arch]
-    # Load ensemble
-    print('| loading model(s) from {}'.format(model_path))
-
-    # load checkpoints
-    model_state_dict = load_state_dict_from_url(model_path)
-    model.load_state_dict(model_state_dict, strict=True)
-
     models = [model]
+
     # Optimize ensemble for generation
     # model.make_generation_fast_()
     if args.fp16:

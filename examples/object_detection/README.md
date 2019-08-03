@@ -11,7 +11,7 @@ python -m examples.object_detection.eval [COCO_DATA_PATH] \
     --task object_detection --num-classes 91 \
     --arch fasterrcnn_resnet50_fpn --criterion fasterrcnn_loss \
     --optimizer sgd --lr 0.02 --momentum 0.9 --weight-decay 1e-4 \
-    --batch-size 1 --valid-subset val
+    --batch-size 1 --valid-subset val --pretrained
 ```
 
 Model | box AP

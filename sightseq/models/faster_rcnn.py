@@ -3,6 +3,10 @@
 from collections import OrderedDict
 
 import torch
+try:
+    from torch.hub import load_state_dict_from_url
+except ImportError:
+    from torch.utils.model_zoo import load_url as load_state_dict_from_url
 
 from torchvision.ops import MultiScaleRoIAlign
 
@@ -49,10 +53,7 @@ class FasterRCNN(BaseFairseqModel):
     """
     @classmethod
     def hub_models(cls):
-        return {
-            'fasterrcnn_resnet50_fpn':
-                'https://download.pytorch.org/models/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth',
-        }
+        return {}
 
     def __init__(self, backbone, rpn, roi_heads, transform):
         super().__init__()
@@ -237,7 +238,11 @@ class FasterRCNN(BaseFairseqModel):
             args.image_mean, args.image_std,
         )
 
-        return FasterRCNN(backbone, rpn, roi_heads, transform)
+        model = FasterRCNN(backbone, rpn, roi_heads, transform)
+        if args.pretrained:
+            state_dict = load_state_dict_from_url(model_urls['fasterrcnn_resnet50_fpn_coco'])
+            model.load_state_dict(state_dict)
+        return model
 
     def forward(self, images, targets=None):
         """
@@ -288,6 +293,12 @@ class FasterRCNN(BaseFairseqModel):
     def max_positions(self):
         """Maximum length supported by the model."""
         return 1e6  # an arbitrary large number
+
+
+model_urls = {
+    'fasterrcnn_resnet50_fpn_coco':
+        'https://download.pytorch.org/models/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth',
+}
 
 
 @register_model_architecture('faster_rcnn', 'faster_rcnn')
