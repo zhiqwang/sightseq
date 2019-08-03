@@ -1,4 +1,4 @@
-# Copyright (c) 2019-present, Zhiqiang Wang.
+# Copyright (c) 2019-present, Zhiqiang Wang
 
 from .densenet import (
     densenet121, densenet161, densenet169, densenet201,

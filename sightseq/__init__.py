@@ -1,4 +1,4 @@
-# Copyright (c) 2019-present, Zhiqiang Wang.
+# Copyright (c) 2019-present, Zhiqiang Wang
 
 import sightseq.criterions
 import sightseq.models

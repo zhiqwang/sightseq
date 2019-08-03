@@ -1,4 +1,4 @@
-# Copyright (c) 2019-present, Zhiqiang Wang.
+# Copyright (c) 2019-present, Zhiqiang Wang
 # Modified from https://github.com/pytorch/vision
 
 import json

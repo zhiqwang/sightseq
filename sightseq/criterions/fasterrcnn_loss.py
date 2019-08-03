@@ -1,4 +1,4 @@
-# Copyright (c) 2019-present, Zhiqiang Wang.
+# Copyright (c) 2019-present, Zhiqiang Wang
 
 from torchvision.models.detection.roi_heads import fastrcnn_loss
 from fairseq.criterions import FairseqCriterion, register_criterion

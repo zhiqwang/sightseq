@@ -32,5 +32,5 @@ sightseq provides reference implementations of various deep learning tasks, incl
 - [object detection](examples/object_detection)
 
 # License
-sightseq is Apache-2.0 licensed.
+sightseq is MIT-licensed.
 The license applies to the pre-trained models as well.

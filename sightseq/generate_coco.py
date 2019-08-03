@@ -1,6 +1,6 @@
 #!/usr/bin/env python3 -u
 #
-# Copyright (c) 2019-present, Zhiqiang Wang.
+# Copyright (c) 2019-present, Zhiqiang Wang
 
 """
 Recognize pre-processed image with a trained model.
