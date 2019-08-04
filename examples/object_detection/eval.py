@@ -8,34 +8,36 @@ Recognize pre-processed image with a trained model.
 
 import torch
 
-from fairseq import options, tasks, progress_bar, utils
+from fairseq import options, progress_bar, utils
 from fairseq.meters import StopwatchMeter, TimeMeter
 
 from sightseq.coco_eval import CocoEvaluator
+from sightseq.models.faster_rcnn import FasterRCNN
 
 
 def main(args):
     utils.import_user_module(args)
-    assert args.pretrained is True, '--pretrained required for eval!'
-
+    args.pretrained = True
     print(args)
 
     use_cuda = torch.cuda.is_available() and not args.cpu
 
     # Load dataset split
-    task = tasks.setup_task(args)
+    fasterrcnn = FasterRCNN.from_pretrained('fasterrcnn_resnet50_fpn_coco', args=args)
+    task = fasterrcnn.task
+
     task.load_dataset(args.valid_subset)
 
     # Build model and criterion
-    model = task.build_model(args)
-    models = [model]
+    models = [fasterrcnn.model]
 
     # Optimize ensemble for generation
-    # model.make_generation_fast_()
-    if args.fp16:
-        model.half()
-    if use_cuda:
-        model.cuda()
+    for model in models:
+        # model.make_generation_fast_()
+        if args.fp16:
+            model.half()
+        if use_cuda:
+            model.cuda()
 
     # Load dataset (possibly sharded)
     itr = task.get_batch_iterator(

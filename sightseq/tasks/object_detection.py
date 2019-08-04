@@ -23,24 +23,33 @@ class ObjectDetectionTask(FairseqTask):
     def add_args(parser):
         """Add task-specific arguments to the parser."""
         # fmt: off
-        parser.add_argument('data', help='path to data directory')
+        parser.add_argument('data', metavar='FOLDER',
+                            help='path to data directory')
+        parser.add_argument('--pretrained', action='store_true', help='pretrained')
+        parser.add_argument('--num-classes', type=int, default=-1, metavar='N',
+                            help='number of output classes of the model (including the background).'
+                                 ' If box_predictor is specified, num_classes should be None')
         parser.add_argument('--max-positions', default=2048, type=int,
                             help='max input length')
-        parser.add_argument('--aspect-ratio-group-factor', default=0, type=int)
+        parser.add_argument('--aspect-ratio-group-factor', type=int, default=0, metavar='N',
+                            help='data sampler with aspect ratio group')
         # fmt: on
 
     def __init__(
-        self, args, transforms=None,
+        self, args, num_classes, transforms=None,
         rpn_anchor_generator=None, rpn_head=None,
         box_roi_pool=None, box_predictor=None, box_head=None,
+        pretrained=False,
     ):
         super().__init__(args)
+        self.num_classes = num_classes
         self.transforms = transforms
         self.rpn_anchor_generator = rpn_anchor_generator
         self.rpn_head = rpn_head
         self.box_roi_pool = box_roi_pool
         self.box_predictor = box_predictor
         self.box_head = box_head
+        self.pretrained = pretrained
 
     @classmethod
     def build_transforms(cls, args):
@@ -56,10 +65,14 @@ class ObjectDetectionTask(FairseqTask):
         Args:
             args (argparse.Namespace): parsed command-line arguments
         """
-
         # build transforms
         transforms = cls.build_transforms(args)
-        return cls(args, transforms=transforms)
+        return cls(
+            args,
+            num_classes=args.num_classes,
+            transforms=transforms,
+            pretrained=args.pretrained,
+        )
 
     def load_dataset(self, split, **kwargs):
         """Load a given dataset split.
@@ -81,15 +94,29 @@ class ObjectDetectionTask(FairseqTask):
         # if split == 'train':
         #     self.dataset[split].remove_images_without_annotations()
 
+    def build_model(self, args):
+        """
+        Build the :class:`~fairseq.models.BaseFairseqModel` instance for this
+        task.
+
+        Args:
+            args (argparse.Namespace): parsed command-line arguments
+
+        Returns:
+            a :class:`~fairseq.models.BaseFairseqModel` instance
+        """
+        model = super().build_model(args)
+        return model
+
+    def build_generator(self, args):
+        from sightseq.coco_generator import ObjectDetectionGenerator
+        return ObjectDetectionGenerator()
+
     def valid_step(self, sample, model, criterion):
         model.train()
         with torch.no_grad():
             loss, sample_size, logging_output = criterion(model, sample)
         return loss, sample_size, logging_output
-
-    def build_generator(self, args):
-        from sightseq.coco_generator import ObjectDetectionGenerator
-        return ObjectDetectionGenerator()
 
     def max_positions(self):
         """Return the max input length allowed by the task."""

@@ -3,10 +3,6 @@
 from collections import OrderedDict
 
 import torch
-try:
-    from torch.hub import load_state_dict_from_url
-except ImportError:
-    from torch.utils.model_zoo import load_url as load_state_dict_from_url
 
 from torchvision.ops import MultiScaleRoIAlign
 
@@ -25,6 +21,7 @@ from fairseq.models import (
 )
 
 from sightseq.modules import RPN, RegionOfInterestHeads
+from .hub_interface import FasterRCNNHubInterface
 
 
 @register_model('faster_rcnn')
@@ -53,7 +50,10 @@ class FasterRCNN(BaseFairseqModel):
     """
     @classmethod
     def hub_models(cls):
-        return {}
+        return {
+            'fasterrcnn_resnet50_fpn_coco':
+                'https://download.pytorch.org/models/fasterrcnn_resnet50_fpn_coco-258fb6c6.pth',
+        }
 
     def __init__(self, backbone, rpn, roi_heads, transform):
         super().__init__()
@@ -68,12 +68,7 @@ class FasterRCNN(BaseFairseqModel):
         # fmt: off
         parser.add_argument('--backbone', default='resnet50',
                             help='CNN backbone architecture. (default: resnet50)')
-        parser.add_argument('--pretrained', action='store_true', help='pretrained')
         # transform parameters
-        parser.add_argument('--num-classes', type=int, metavar='N',
-                            help='number of output classes of the'
-                                 ' model (including the background). If box_predictor'
-                                 ' is specified, num_classes should be None')
         parser.add_argument('--min-size', type=int, metavar='N',
                             help='minimum size of the image to be rescaled'
                                  ' before feeding it to the backbone')
@@ -140,22 +135,50 @@ class FasterRCNN(BaseFairseqModel):
         # fmt: on
 
     @classmethod
+    def from_pretrained(
+        cls,
+        model_name_or_path,
+        checkpoint_file='model.pt',
+        data_name_or_path='.',
+        **kwargs,
+    ):
+        archive_map = cls.hub_models()
+        if '.' in model_name_or_path:
+            from fairseq import hub_utils
+            x = hub_utils.from_pretrained(
+                model_name_or_path,
+                checkpoint_file,
+                data_name_or_path,
+                archive_map=archive_map,
+                **kwargs,
+            )
+            args, task, model = x['args'], x['task'], x['models'][0]
+        else:
+            from sightseq import hub_utils
+            x = hub_utils.from_pretrained(
+                model_name_or_path,
+                checkpoint_file,
+                archive_map=archive_map,
+                **kwargs,
+            )
+            args, task, model = x['args'], x['task'], x['model']
+        return FasterRCNNHubInterface(args, task, model)
+
+    @classmethod
     def build_model(cls, args, task):
         """Build a new model instance."""
         # make sure that all args are properly defaulted (in case there are any new ones)
         base_architecture(args)
 
         rpn_anchor_generator = task.rpn_anchor_generator
+        rpn_head = task.rpn_head
         box_roi_pool = task.box_roi_pool
         box_predictor = task.box_predictor
-        rpn_head = task.rpn_head
         box_head = task.box_head
 
         # setup backbone
-        pretrained_backbone = True
-        if args.pretrained:
-            # no need to download the backbone if pretrained is set
-            pretrained_backbone = False
+        # no need to download the backbone if pretrained is set
+        pretrained_backbone = not task.pretrained
         backbone = resnet_fpn_backbone(args.backbone, pretrained_backbone)
 
         if not hasattr(backbone, "out_channels"):
@@ -168,13 +191,12 @@ class FasterRCNN(BaseFairseqModel):
         assert isinstance(rpn_anchor_generator, (AnchorGenerator, type(None)))
         assert isinstance(box_roi_pool, (MultiScaleRoIAlign, type(None)))
 
-        if args.num_classes is not None:
+        if task.num_classes > 0:
             if box_predictor is not None:
-                raise ValueError("num_classes should be None when box_predictor is specified")
+                raise ValueError("num_classes should be -1 when box_predictor is specified")
         else:
             if box_predictor is None:
-                raise ValueError("num_classes should not be None when box_predictor "
-                                 "is not specified")
+                raise ValueError("num_classes should be > 0 when box_predictor is not specified")
 
         out_channels = backbone.out_channels
 
@@ -217,7 +239,7 @@ class FasterRCNN(BaseFairseqModel):
             representation_size = 1024
             box_predictor = FastRCNNPredictor(
                 representation_size,
-                args.num_classes,
+                task.num_classes,
             )
 
         roi_heads = RegionOfInterestHeads(
@@ -238,11 +260,7 @@ class FasterRCNN(BaseFairseqModel):
             args.image_mean, args.image_std,
         )
 
-        model = FasterRCNN(backbone, rpn, roi_heads, transform)
-        if args.pretrained:
-            state_dict = load_state_dict_from_url(model_urls['fasterrcnn_resnet50_fpn_coco'])
-            model.load_state_dict(state_dict)
-        return model
+        return cls(backbone, rpn, roi_heads, transform)
 
     def forward(self, images, targets=None):
         """
@@ -304,8 +322,6 @@ model_urls = {
 @register_model_architecture('faster_rcnn', 'faster_rcnn')
 def base_architecture(args):
     args.backbone = getattr(args, 'backbone', 'resnet50')
-    args.pretrained = getattr(args, 'pretrained', False)
-    args.num_classes = getattr(args, 'num_classes', None)
     args.min_size = getattr(args, 'min_size', 800)
     args.max_size = getattr(args, 'max_size', 1333)
     args.image_mean = getattr(args, 'image_mean', None)
