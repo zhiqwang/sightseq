@@ -30,8 +30,10 @@ cd cocoapi/PythonAPI
 python setup.py build_ext install
 ```
 
-## Prepare COCO Dataset
-It is recommended to symlink the dataset root to `$[SIGHTSEQ]/data-bin`.
+## Training new models
+
+### Prepare the data
+You can pretrain Faster RCNN from scratch, you should prepare the training data using coco format, and it's recommended to symlink the dataset root to `$[SIGHTSEQ]/data-bin`.
 
 ```
 sightseq
@@ -45,7 +47,7 @@ sightseq
 │   │   ├── test2017
 ```
 
-## Training
+### Training
 *Note*, currently the data sampler with aspect ratio group is not ensembled to `sightseq` when training, but I keep this parameter for later use.
 ```
 python -m sightseq.train [DATA] \
@@ -62,7 +64,7 @@ python -m sightseq.train [DATA] \
     --no-progress-bar
 ```
 
-## Testing
+### Testing
 ```
 python -m sightseq.generate_coco [DATA] \
     --task object_detection \

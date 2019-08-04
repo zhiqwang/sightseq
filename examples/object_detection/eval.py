@@ -17,7 +17,6 @@ from sightseq.models.faster_rcnn import FasterRCNN
 
 def main(args):
     utils.import_user_module(args)
-    args.pretrained = True
     print(args)
 
     use_cuda = torch.cuda.is_available() and not args.cpu
@@ -117,7 +116,6 @@ def cli_main():
             '--weight-decay', '1e-4',
             '--batch-size', '1',
             '--valid-subset', 'val',
-            '--pretrained',
         ],
     )
     main(args)

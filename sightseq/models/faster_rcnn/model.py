@@ -68,6 +68,8 @@ class FasterRCNN(BaseFairseqModel):
         # fmt: off
         parser.add_argument('--backbone', default='resnet50',
                             help='CNN backbone architecture. (default: resnet50)')
+        parser.add_argument('--backbone-pretrained', action='store_true',
+                            help='backbone pretrained')
         # transform parameters
         parser.add_argument('--min-size', type=int, metavar='N',
                             help='minimum size of the image to be rescaled'
@@ -157,7 +159,6 @@ class FasterRCNN(BaseFairseqModel):
             from sightseq import hub_utils
             x = hub_utils.from_pretrained(
                 model_name_or_path,
-                checkpoint_file,
                 archive_map=archive_map,
                 **kwargs,
             )
@@ -177,9 +178,7 @@ class FasterRCNN(BaseFairseqModel):
         box_head = task.box_head
 
         # setup backbone
-        # no need to download the backbone if pretrained is set
-        pretrained_backbone = not task.pretrained
-        backbone = resnet_fpn_backbone(args.backbone, pretrained_backbone)
+        backbone = resnet_fpn_backbone(args.backbone, args.backbone_pretrained)
 
         if not hasattr(backbone, "out_channels"):
             raise ValueError(
@@ -322,6 +321,7 @@ model_urls = {
 @register_model_architecture('faster_rcnn', 'faster_rcnn')
 def base_architecture(args):
     args.backbone = getattr(args, 'backbone', 'resnet50')
+    args.backbone_pretrained = getattr(args, 'backbone_pretrained', False)
     args.min_size = getattr(args, 'min_size', 800)
     args.max_size = getattr(args, 'max_size', 1333)
     args.image_mean = getattr(args, 'image_mean', None)
