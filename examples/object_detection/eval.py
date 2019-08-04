@@ -103,7 +103,23 @@ def main(args):
 
 def cli_main():
     parser = options.get_training_parser()
-    args = options.parse_args_and_arch(parser)
+    args = options.parse_args_and_arch(
+        parser,
+        [
+            'data-bin/coco',
+            '--task', 'object_detection',
+            '--num-classes', '91',
+            '--arch', 'fasterrcnn_resnet50_fpn',
+            '--criterion', 'fasterrcnn_loss',
+            '--optimizer', 'sgd',
+            '--lr', '0.02',
+            '--momentum', '0.9',
+            '--weight-decay', '1e-4',
+            '--batch-size', '1',
+            '--valid-subset', 'val',
+            '--pretrained',
+        ],
+    )
     main(args)
 
 

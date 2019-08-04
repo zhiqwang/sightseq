@@ -5,13 +5,9 @@ Example to train a object detection model as described in [Ren et al. (2015), Fa
 ## Detection Performance
 The architecture of `sightseq` object detection is equal to `torchvision` apart from spliting the computation of criterion from the network's forward propagation graph to [`fasterrcnn_loss`](../../sightseq/criterions/fasterrcnn_loss.py). So the models is backwards-compatible with `torchvison`. And I borrow the `torchvision` fasterrcnn_resnet50_fpn weights to `sightseq`, the mAP is exactly the same as `torchvision`.
 
-Run `eval`, you can get the mAP on the `coco_2017_val`.
+Run `eval`, you can get the mAP on the `coco_2017_val`. (Assume coco dataset in `$[SIGHTSEQ]/data-bin/coco`)
 ```
-python -m examples.object_detection.eval [COCO_DATA_PATH] \
-    --task object_detection --num-classes 91 \
-    --arch fasterrcnn_resnet50_fpn --criterion fasterrcnn_loss \
-    --optimizer sgd --lr 0.02 --momentum 0.9 --weight-decay 1e-4 \
-    --batch-size 1 --valid-subset val --pretrained
+python -m examples.object_detection.eval
 ```
 
 Model | box AP
