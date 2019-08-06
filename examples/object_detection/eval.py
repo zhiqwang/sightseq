@@ -3,7 +3,7 @@
 # Copyright (c) 2019-present, Zhiqiang Wang
 #
 """
-Recognize pre-processed image with a trained model.
+Evaluate coco dataset with a trained model.
 """
 
 import torch

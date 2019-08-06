@@ -5,7 +5,7 @@ Example to train a object detection model as described in [Ren et al. (2015), Fa
 ## Detection Performance
 The architecture of `sightseq` object detection is equal to `torchvision` apart from spliting the computation of criterion from the network's forward propagation graph to [`fasterrcnn_loss`](../../sightseq/criterions/fasterrcnn_loss.py). So the models is backwards-compatible with `torchvison`. And I borrow the `torchvision` fasterrcnn_resnet50_fpn weights to `sightseq`, the mAP is exactly the same as `torchvision`.
 
-Run `eval`, you can get the mAP on the `coco_2017_val`. (Assume coco dataset in `$[SIGHTSEQ]/data-bin/coco`)
+Run `eval`, you can get the mAP on the `coco_2017_val`. (Assume coco dataset in `[YOUR_SIGHTSEQ_ROOT]/data-bin/coco`)
 ```
 python -m examples.object_detection.eval
 ```
@@ -31,20 +31,21 @@ python setup.py build_ext install
 ```
 
 ## Training new models
+Navigate (`cd`) to the root of the toolbox `[YOUR_SIGHTSEQ_ROOT]`.
 
 ### Prepare the data
-You can pretrain Faster RCNN from scratch, you should prepare the training data using coco format, and it's recommended to symlink the dataset root to `$[SIGHTSEQ]/data-bin`.
+You can pretrain Faster RCNN from scratch, you should prepare the training data using coco format, and it's recommended to symlink the dataset root to `./data-bin`.
 
 ```
-sightseq
-├── sightseq
-├── examples
+.
 ├── data-bin
-│   ├── coco
-│   │   ├── annotations
-│   │   ├── train2017
-│   │   ├── val2017
-│   │   ├── test2017
+│   └── coco
+│       ├── annotations
+│       ├── train2017
+│       ├── val2017
+│       └── test2017
+├── examples
+└── sightseq
 ```
 
 ### Training
